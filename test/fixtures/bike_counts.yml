@@ -1,0 +1,9 @@
+one:
+  counting_station: one
+  counted_at: 2025-01-01 00:00:00
+  count: 10
+
+two:
+  counting_station: two
+  counted_at: 2025-01-01 00:00:00
+  count: 5

@@ -1,0 +1,13 @@
+one:
+  external_id: 02-MI-JAN-N
+  name: Jannowitzbrucke Nord
+  latitude: 52.5139322
+  longitude: 13.4178346
+  installed_at: 2015-04-01
+
+two:
+  external_id: 02-MI-JAN-S
+  name: Jannowitzbrucke Sud
+  latitude: 52.5139430
+  longitude: 13.4176111
+  installed_at: 2015-04-01

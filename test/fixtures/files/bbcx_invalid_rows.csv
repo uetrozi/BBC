@@ -1,0 +1,4 @@
+counted_at,station_external_id,station_name,count,latitude,longitude,installed_at
+,02-MI-JAN-N,Jannowitzbrucke Nord,10,52.5139322,13.4178346,2015-04-01
+2025-01-01T00:00:00,,Jannowitzbrucke Sud,5,52.5139430,13.4176111,2015-04-01
+2025-01-01T01:00:00,02-MI-JAN-N,Jannowitzbrucke Nord,-2,52.5139322,13.4178346,2015-04-01
