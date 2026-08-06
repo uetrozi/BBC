@@ -10,7 +10,7 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     get explorer_url
 
     assert_response :success
-    assert_includes response.body, "Bike Count Explorer"
+    assert_includes response.body, "Explorer"
   end
 
   test "shows imported bike counts" do
@@ -79,7 +79,7 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     get explorer_url, params: { from: "2030-01-01", to: "2030-01-02" }
 
     assert_response :success
-    assert_includes response.body, "No bike counts found for the selected filters."
+    assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
   end
 
   test "handles invalid date range without server error" do
@@ -87,7 +87,7 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "End date must be on or after start date."
-    assert_includes response.body, "No bike counts found for the selected filters."
+    assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
   end
 
   test "handles unknown counting station id without server error" do
@@ -96,14 +96,14 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_includes response.body, "Unknown counting station ID: 999999."
     assert_includes response.body, "Unknown station (ID 999999)"
-    assert_includes response.body, "No bike counts found for the selected filters."
+    assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
   end
 
   test "handles non numeric page parameter gracefully" do
     get explorer_url, params: { page: "not-a-number" }
 
     assert_response :success
-    assert_includes response.body, "Bike Count Explorer"
+    assert_includes response.body, "Explorer"
   end
 
   test "handles non numeric station id gracefully" do
@@ -111,7 +111,7 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "Counting station ID must be a positive integer."
-    assert_includes response.body, "No bike counts found for the selected filters."
+    assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
   end
 
   test "handles empty database without server error" do
@@ -121,8 +121,8 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     get explorer_url
 
     assert_response :success
-    assert_includes response.body, "Matching rows:"
-    assert_includes response.body, "No bike counts found for the selected filters."
+    assert_includes response.body, "Gefundene Messwerte:"
+    assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
   end
 
   test "paginates and keeps filter params in pagination links" do
@@ -138,7 +138,7 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     get explorer_url, params: { station_id: @station_one.id, from: "2025-01-01", to: "2025-01-31" }
 
     assert_response :success
-    assert_includes response.body, "Page 1 of 2"
+    assert_includes response.body, "Seite 1 von 2"
     assert_includes response.body, "station_id=#{@station_one.id}"
     assert_includes response.body, "from=2025-01-01"
     assert_includes response.body, "to=2025-01-31"
@@ -147,7 +147,7 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     get explorer_url, params: { station_id: @station_one.id, from: "2025-01-01", to: "2025-01-31", page: 2 }
 
     assert_response :success
-    assert_includes response.body, "Page 2 of 2"
+    assert_includes response.body, "Seite 2 von 2"
     assert_not_includes response.body, "data-counted-at=\"2025-01-05T13:00:00Z\""
   end
 end

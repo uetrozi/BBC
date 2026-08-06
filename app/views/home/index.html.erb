@@ -1,14 +1,10 @@
-<% content_for :title, "BerlinBikeCountExplorer (BBC-X)" %>
-
 <main class="hero">
 	<h1>BerlinBikeCountExplorer</h1>
-	<p class="short-name">BBC-X</p>
 	<p>
-		BBC-X is a compact Ruby on Rails learning project that imports official Berlin
-		bicycle count data, stores it in PostgreSQL, and prepares filtered time series
-		for analysis and charts.
+		Die Anwendung importiert offizielle Berliner Radzähl-Messwerte, speichert sie in PostgreSQL
+		und zeigt sie über Filter als Tabelle, Kennzahlen und Zeitreihe im Explorer.
 	</p>
 	<p>
-		<%= link_to "Open Explorer", explorer_path, class: "primary-link" %>
+		<%= link_to "Explorer öffnen", explorer_path, class: "primary-link" %>
 	</p>
 </main>

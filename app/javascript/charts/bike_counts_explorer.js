@@ -1,8 +1,5 @@
-import { Chart, registerables } from "chart.js"
-
-Chart.register(...registerables)
-
 let bikeCountsChart = null
+const MAX_LIBRARY_WAIT_ATTEMPTS = 20
 
 function parseJsonArray(value) {
   try {
@@ -21,9 +18,30 @@ function destroyBikeCountsChart() {
   bikeCountsChart = null
 }
 
+function setChartLibraryError(visible) {
+  const message = document.querySelector("[data-chart-library-error='true']")
+  if (!message) return
+
+  message.hidden = !visible
+}
+
 function renderBikeCountsChart() {
+  renderBikeCountsChartWithRetry(0)
+}
+
+function renderBikeCountsChartWithRetry(attempt) {
   const canvas = document.querySelector("[data-bike-count-chart='true']")
   if (!canvas) return
+
+  if (typeof window.Chart === "undefined") {
+    if (attempt < MAX_LIBRARY_WAIT_ATTEMPTS) {
+      setTimeout(() => renderBikeCountsChartWithRetry(attempt + 1), 50)
+    } else {
+      setChartLibraryError(true)
+    }
+    return
+  }
+  setChartLibraryError(false)
 
   const labels = parseJsonArray(canvas.dataset.chartLabels)
   const values = parseJsonArray(canvas.dataset.chartValues)
@@ -35,7 +53,7 @@ function renderBikeCountsChart() {
 
   destroyBikeCountsChart()
 
-  bikeCountsChart = new Chart(canvas, {
+  bikeCountsChart = new window.Chart(canvas, {
     type: "line",
     data: {
       labels,

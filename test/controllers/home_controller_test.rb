@@ -5,6 +5,6 @@ class HomeControllerTest < ActionDispatch::IntegrationTest
     get root_url
     assert_response :success
     assert_includes response.body, "BerlinBikeCountExplorer"
-    assert_includes response.body, "BBC-X"
+    assert_includes response.body, "Explorer"
   end
 end

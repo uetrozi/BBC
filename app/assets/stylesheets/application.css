@@ -219,11 +219,20 @@ select:focus-visible {
 
 .chart-canvas-wrap {
   position: relative;
-  min-height: 280px;
+  height: 320px;
+}
+
+.chart-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .chart-text-summary {
   color: var(--muted);
+}
+
+.chart-fallback {
+  margin-top: 0.6rem;
 }
 
 table {

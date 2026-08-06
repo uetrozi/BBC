@@ -16,19 +16,19 @@ class ExplorerFlowTest < ApplicationSystemTestCase
     select "02-MI-JAN-N - Jannowitzbrucke Nord", from: "station_id"
     fill_in "from", with: "2025-01-01"
     fill_in "to", with: "2025-01-01"
-    click_on "Apply filters"
+    click_on "Filter anwenden"
 
-    assert_text "Matching rows: 2"
-    assert_text "Total counted bicycles"
+    assert_text "Gefundene Messwerte: 2"
+    assert_text "Gezählte Fahrräder gesamt"
     assert_text "30"
-    assert_text "Evaluated days"
+    assert_text "Ausgewertete Tage"
     assert_text "1"
     assert_no_text "2025-01-02 08:00"
 
-    click_on "Reset"
+    click_on "Zurücksetzen"
 
     assert_current_path explorer_path
-    assert_text "Matching rows: 3"
-    assert_text "2025-01-02 08:00"
+    assert_text "Gefundene Messwerte: 3"
+    assert_text "2. Januar 2025, 08:00"
   end
 end

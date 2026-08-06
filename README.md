@@ -1,6 +1,6 @@
-# BerlinBikeCountExplorer (BBC-X)
+# BerlinBikeCountExplorer
 
-BBC-X ist eine Ruby-on-Rails-Anwendung zur Auswertung offizieller Berliner Radzähldaten: CSV-Import, serverseitige Filterung, tabellarische Anzeige, Kennzahlen und Zeitreihen-Diagramm.
+BerlinBikeCountExplorer ist eine Ruby-on-Rails-Anwendung zur Auswertung offizieller Berliner Radzähldaten: CSV-Import, serverseitige Filterung, tabellarische Anzeige, Kennzahlen und Zeitreihen-Diagramm.
 
 ## 1) Screenshot
 
@@ -13,7 +13,7 @@ Aktuell liegt kein finaler Screenshot im Repository. Nutze die Anleitung in `doc
 
 ## 3) Problemstellung und Nutzen
 
-Die offiziellen Berliner Radzähldaten liegen als große Rohdateien vor. BBC-X zeigt, wie diese Daten robust importiert, in PostgreSQL modelliert und für eine nachvollziehbare Analyseoberfläche aufbereitet werden können.
+Die offiziellen Berliner Radzähldaten liegen als große Rohdateien vor. Das Projekt zeigt, wie diese Daten robust importiert, in PostgreSQL modelliert und für eine nachvollziehbare Analyseoberfläche aufbereitet werden können.
 
 ## 4) Funktionsumfang
 
