@@ -37,7 +37,7 @@ Die offiziellen Berliner Radzähldaten liegen als große Rohdateien vor. Das Pro
 - Minitest (inkl. Systemtest mit Rack::Test)
 - Chart.js (via Importmap)
 - RuboCop, Brakeman, Bundler Audit
-- Dockerfile + Kamal-Konfiguration
+- Dockerfile + Render Blueprint (`render.yaml`)
 
 ## 6) Datenquelle und Lizenz
 
@@ -134,11 +134,10 @@ Dann:
 ### Produktion (relevant)
 - `RAILS_ENV=production`
 - `RAILS_MASTER_KEY`
-- `BERLIN_BIKE_COUNT_EXPLORER_DATABASE_PASSWORD` (falls nicht über `DATABASE_URL`)
-- `DATABASE_URL` (empfohlen bei externem Hosting)
+- `DATABASE_URL` (Pflicht, z. B. Render Postgres oder externer Anbieter)
 - `RAILS_FORCE_SSL=true` (empfohlen)
 - `RAILS_ASSUME_SSL=true` (hinter SSL-terminierendem Proxy)
-- `RAILS_ALLOWED_HOSTS=example.com,www.example.com`
+- `RAILS_ALLOWED_HOSTS=example.com,www.example.com` (optional auf Render, da `RENDER_EXTERNAL_HOSTNAME` automatisch berücksichtigt wird)
 - `RAILS_LOG_LEVEL=info` (Default)
 
 ## 13) Datenbankanlage und Migrationen
@@ -215,11 +214,15 @@ bin/ci
 
 ## 18) Deployment
 
-Es existiert bereits eine **Kamal**-Konfiguration (`config/deploy.yml`), daher wurde diese als Deployment-Ziel beibehalten.
+Für ein kostenloses CV-Demo-Hosting ist **Render** vorbereitet:
 
-- Warum Kamal: offizieller Rails-Deploy-Pfad für containerisierte Deployments, kompatibel mit PostgreSQL.
-- Lokale Vorbereitung abgeschlossen; Schritte mit Login/Serverzugang sind in `docs/deployment.md` dokumentiert.
-- Keine kostenpflichtigen Ressourcen wurden automatisch angelegt.
+- Blueprint-Datei: `render.yaml`
+- Runtime: Docker (nutzt vorhandenes `Dockerfile`)
+- Healthcheck: `/up`
+- Infrastruktur reduziert:
+  - keine Redis-Pflicht (Action Cable läuft in Produktion mit `async`)
+  - Single-Postgres-Setup möglich (alle DB-Rollen können auf `DATABASE_URL` fallen)
+
 
 ## 19) Bekannte Einschränkungen
 

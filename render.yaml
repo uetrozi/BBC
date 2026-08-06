@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: berlin-bike-count-explorer
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /up
+    envVars:
+      - key: RAILS_ENV
+        value: production
+      - key: RAILS_LOG_LEVEL
+        value: info
+      - key: RAILS_ASSUME_SSL
+        value: "true"
+      - key: RAILS_FORCE_SSL
+        value: "true"
+      - key: RAILS_MASTER_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false

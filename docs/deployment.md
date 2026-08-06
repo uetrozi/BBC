@@ -2,8 +2,7 @@
 
 ## Ziel und gewählter Ansatz
 
-BBC-X nutzt bereits eine vorhandene **Kamal**-Konfiguration (`config/deploy.yml`) und ein produktionsfähiges Dockerfile.  
-Deshalb wird Kamal als Deployment-Ziel beibehalten, statt eine zweite Plattformkonfiguration einzuführen.
+Für die CV-Demo ist **Render** als Hosting-Ziel vorbereitet (`render.yaml` + Dockerfile).
 
 ## Was lokal vorbereitet wurde
 
@@ -13,22 +12,26 @@ Deshalb wird Kamal als Deployment-Ziel beibehalten, statt eine zweite Plattformk
 - Datenbankmigrationen lauffähig
 - Asset-Pipeline mit Importmap/Chart.js integriert
 
-## Manuell erforderliche Schritte (nicht automatisierbar ohne Zugangsdaten)
+## Render: konkrete Schritte
 
-1. Zielserver bereitstellen (Linux-Host mit Docker und SSH-Zugang)
-2. DNS/Domain konfigurieren (optional, aber empfohlen)
-3. Container-Registry festlegen (z. B. GHCR oder Docker Hub)
-4. Zugangsdaten für Registry und `RAILS_MASTER_KEY` als Secrets hinterlegen
-5. `config/deploy.yml` mit echten Hosts/Registry-Werten ersetzen
+1. Repository mit Render verbinden
+2. New + Blueprint verwenden und `render.yaml` auswählen
+3. In Render folgende Variablen setzen:
+   - `RAILS_MASTER_KEY`
+   - `DATABASE_URL` (Render Postgres oder externer Anbieter)
+4. Deploy starten
+5. Nach erstem Deploy optional einmalig Seeds ausführen:
+   - `bin/rails bbcx:seed_demo`
 
 ## Relevante Umgebungsvariablen in Produktion
 
 - `RAILS_MASTER_KEY` (Pflicht)
-- `DATABASE_URL` oder DB-Einzelvariablen
-- `BERLIN_BIKE_COUNT_EXPLORER_DATABASE_PASSWORD` (falls kein `DATABASE_URL`)
+- `DATABASE_URL` (Pflicht)
+- optional: `CACHE_DATABASE_URL`, `QUEUE_DATABASE_URL`, `CABLE_DATABASE_URL`
+  - falls nicht gesetzt, nutzen sie automatisch `DATABASE_URL`
 - `RAILS_FORCE_SSL=true` (empfohlen)
 - `RAILS_ASSUME_SSL=true` (hinter Reverse Proxy)
-- `RAILS_ALLOWED_HOSTS=example.com,www.example.com`
+- `RAILS_ALLOWED_HOSTS=example.com,www.example.com` (optional auf Render)
 - `RAILS_LOG_LEVEL=info`
 
 ## Build-, Start- und Migrationsschritte
@@ -44,22 +47,16 @@ docker run --rm -p 3000:80 \
   berlin_bike_count_explorer
 ```
 
-### Mit Kamal (nach manueller Konfiguration)
+## Demo-taugliche Infrastruktur-Reduktion
 
-```bash
-bin/kamal setup
-bin/kamal deploy
-bin/kamal app exec "bin/rails db:migrate"
-```
-
-Hinweis: Je nach Kamal-Setup kann die Migration bereits im Deploy-Ablauf enthalten sein; der explizite Befehl ist als sichere Nachkontrolle dokumentiert.
+- **Kein Redis erforderlich**: `config/cable.yml` nutzt in Produktion `adapter: async`.
+- **Single-Postgres möglich**: Primärdatenbank über `DATABASE_URL`; zusätzliche Rollen fallen standardmäßig auf dieselbe URL zurück.
 
 ## Sicherheits-/Secrets-Hinweise
 
 - `config/master.key` darf nicht ins Repository.
-- Keine Klartext-Passwörter in `config/deploy.yml`.
-- `.kamal/secrets` referenziert Secrets über Umgebungsvariablen/Dateien.
+- Keine Klartext-Passwörter/Schlüssel in der Repository-Historie speichern.
 
 ## Status
 
-Deployment ist bis zum notwendigen manuellen Anmeldeschritt (Server/Registry/Secrets) vorbereitet, aber nicht automatisiert abgeschlossen.
+Render-Deployment ist per Blueprint vorbereitet; produktive Veröffentlichung hängt nur noch von gesetzten Secrets/DB-URL und dem ersten Render-Deploy ab.

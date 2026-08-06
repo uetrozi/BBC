@@ -83,5 +83,8 @@ Rails.application.configure do
     .split(",")
     .map(&:strip)
     .reject(&:blank?)
+  render_host = ENV["RENDER_EXTERNAL_HOSTNAME"]&.strip
+  configured_hosts << render_host if render_host.present?
+  configured_hosts.uniq!
   config.hosts = configured_hosts if configured_hosts.any?
 end
