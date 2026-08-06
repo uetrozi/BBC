@@ -22,6 +22,8 @@ Für die CV-Demo ist **Render** als Hosting-Ziel vorbereitet (`render.yaml` + Do
 4. Deploy starten
 5. Nach erstem Deploy optional einmalig Seeds ausführen:
    - `bin/rails bbcx:seed_demo`
+6. Ohne Render-Shell echte CSV-Daten importieren:
+   - `bin/import_production_csv data/raw/bbcx_normalized_2025.csv`
 
 ## Relevante Umgebungsvariablen in Produktion
 
@@ -60,3 +62,14 @@ docker run --rm -p 3000:80 \
 ## Status
 
 Render-Deployment ist per Blueprint vorbereitet; produktive Veröffentlichung hängt nur noch von gesetzten Secrets/DB-URL und dem ersten Render-Deploy ab.
+
+## Import ohne Render-Shell (1Password CLI)
+
+Das Script `bin/import_production_csv` liest folgende 1Password-Items aus:
+
+- `op://Private/BBCX/render.com/database_url`
+- `op://Private/BBCX/render.com/master_key`
+
+Voraussetzung:
+
+- `op` CLI installiert und angemeldet (`op signin`)

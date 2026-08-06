@@ -4,12 +4,18 @@ BerlinBikeCountExplorer ist eine Ruby-on-Rails-Anwendung zur Auswertung offiziel
 
 ## 1) Screenshot
 
-Aktuell liegt kein finaler Screenshot im Repository. Nutze die Anleitung in `docs/screenshot-guide.md`, um reproduzierbar einen Portfolio-Screenshot zu erstellen.
+Explorer (lokale Demoansicht, ungefiltert):
+
+![Explorer Live Full](docs/screenshots/explorer-live-full.png)
+
+Explorer (lokale Demoansicht, Zeitraum-Filter, Tabelle exemplarisch mit wenigen Treffern):
+
+![Explorer Live Filtered](docs/screenshots/explorer-live-filtered.png)
 
 ## 2) Live-Demo
 
-- Live-Demo: _noch nicht veröffentlicht_
-- Deployment-Vorbereitung und manuelle Schritte: `docs/deployment.md`
+- Live-Demo: https://berlin-bike-count-explorer.onrender.com/explorer
+- Hinweis: Die Instanz läuft auf Render.com Free Tier. Nach Inaktivität kann ein Cold Start von bis zu ca. 1 Minute auftreten, bevor die App sichtbar ist.
 
 ## 3) Problemstellung und Nutzen
 
@@ -62,6 +68,7 @@ Offizielle XLSX/CSV-Quelle
 ## 8) Datenmodell
 
 ### counting_stations
+
 - `external_id` (unique)
 - `name`
 - `latitude` (optional)
@@ -69,6 +76,7 @@ Offizielle XLSX/CSV-Quelle
 - `installed_at` (optional)
 
 ### bike_counts
+
 - `counting_station_id` (FK)
 - `counted_at`
 - `count`
@@ -76,6 +84,7 @@ Offizielle XLSX/CSV-Quelle
 - Zusatzindex auf `counted_at` für Datumsfilter/Aggregation
 
 ### import_batches
+
 - `filename`
 - `imported_at`
 - `rows_read`
@@ -123,15 +132,18 @@ bin/rails db:prepare
 ```
 
 Dann:
+
 - Startseite: `http://localhost:3000`
 - Explorer: `http://localhost:3000/explorer`
 
 ## 12) Erforderliche Umgebungsvariablen
 
 ### Lokal (optional)
+
 - `RAILS_MAX_THREADS` (Default 5 in DB-Konfiguration)
 
 ### Produktion (relevant)
+
 - `RAILS_ENV=production`
 - `RAILS_MASTER_KEY`
 - `DATABASE_URL` (Pflicht, z. B. Render Postgres oder externer Anbieter)
@@ -165,6 +177,12 @@ CSV-Import:
 
 ```bash
 bin/rails "bbcx:import[data/raw/bbcx_normalized_2025.csv]"
+```
+
+Produktions-Import über Supabase/Render-Zugangsdaten aus 1Password:
+
+```bash
+bin/import_production_csv data/raw/bbcx_normalized_2025.csv
 ```
 
 Normalisieren + Import in einem Schritt:
@@ -222,7 +240,6 @@ Für ein kostenloses CV-Demo-Hosting ist **Render** vorbereitet:
 - Infrastruktur reduziert:
   - keine Redis-Pflicht (Action Cable läuft in Produktion mit `async`)
   - Single-Postgres-Setup möglich (alle DB-Rollen können auf `DATABASE_URL` fallen)
-
 
 ## 19) Bekannte Einschränkungen
 
