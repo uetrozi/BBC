@@ -158,8 +158,8 @@
         ></canvas>
       </div>
       <p class="chart-text-summary">
-        Erster ausgewerteter Tag: <strong><%= format_optional_filter_date(@chart_labels.first) %></strong>,
-        letzter ausgewerteter Tag: <strong><%= format_optional_filter_date(@chart_labels.last) %></strong>,
+        Erster ausgewerteter Tag: <strong><%= format_optional_filter_date_with_weekday(@chart_labels.first) %></strong>,
+        letzter ausgewerteter Tag: <strong><%= format_optional_filter_date_with_weekday(@chart_labels.last) %></strong>,
         Anzahl dargestellter Tage: <strong><%= @chart_labels.size %></strong>.
       </p>
       <p class="warning-box" data-chart-library-error="true" hidden>
@@ -169,7 +169,7 @@
         <summary>Tageswerte als Textliste anzeigen</summary>
         <ul>
           <% @statistics.daily_series.each do |point| %>
-            <li><%= format_optional_filter_date(point[:date]) %>: <%= format_integer(point[:count]) %></li>
+            <li><%= format_optional_filter_date_with_weekday(point[:date]) %>: <%= format_integer(point[:count]) %></li>
           <% end %>
         </ul>
       </details>

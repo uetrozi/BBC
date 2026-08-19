@@ -1,5 +1,11 @@
 let bikeCountsChart = null
 const MAX_LIBRARY_WAIT_ATTEMPTS = 20
+const germanDateWithWeekdayFormatter = new Intl.DateTimeFormat("de-DE", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric"
+})
 
 function parseJsonArray(value) {
   try {
@@ -16,6 +22,15 @@ function destroyBikeCountsChart() {
 
   bikeCountsChart.destroy()
   bikeCountsChart = null
+}
+
+function formatChartDateLabel(rawValue) {
+  if (typeof rawValue !== "string") return rawValue
+
+  const parsed = new Date(`${rawValue}T00:00:00Z`)
+  if (Number.isNaN(parsed.valueOf())) return rawValue
+
+  return germanDateWithWeekdayFormatter.format(parsed)
 }
 
 function setChartLibraryError(visible) {
@@ -62,7 +77,28 @@ function renderBikeCountsChartWithRetry(attempt) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title(items) {
+              const firstItem = items?.[0]
+              if (!firstItem) return ""
+
+              return formatChartDateLabel(firstItem.label)
+            }
+          }
+        }
+      },
       scales: {
+        x: {
+          ticks: {
+            callback(_value, index) {
+              return formatChartDateLabel(labels[index])
+            },
+            maxRotation: 45,
+            minRotation: 45
+          }
+        },
         y: {
           beginAtZero: true,
           ticks: {
