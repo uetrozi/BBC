@@ -9,7 +9,7 @@ class BikeCountsController < ApplicationController
   ].freeze
 
   def index
-    @stations = CountingStation.order(:external_id)
+    @stations = CountingStation.joins(:bike_counts).distinct.order(:external_id)
     @filter_values = filter_values
     base_scope = BikeCount
       .includes(:counting_station)

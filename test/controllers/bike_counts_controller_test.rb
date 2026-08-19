@@ -21,6 +21,19 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-external-id=\"#{@station_two.external_id}\""
   end
 
+  test "does not show stations without bike count data in station filter" do
+    empty_station = CountingStation.create!(
+      external_id: "DEMO-EMPTY-01",
+      name: "Demo ohne Messwerte"
+    )
+
+    get explorer_url
+
+    assert_response :success
+    assert_not_includes response.body, "value=\"#{empty_station.id}\""
+    assert_not_includes response.body, empty_station.name
+  end
+
   test "filters by counting station" do
     get explorer_url, params: { station_id: @station_one.id }
 
