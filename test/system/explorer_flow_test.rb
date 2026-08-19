@@ -13,7 +13,7 @@ class ExplorerFlowTest < ApplicationSystemTestCase
   test "user can filter, see results and reset filters" do
     visit explorer_path
 
-    select "02-MI-JAN-N - Jannowitzbrucke Nord", from: "station_id"
+    select "Jannowitzbrucke Nord", from: "station_ids"
     fill_in "from", with: "2025-01-01"
     fill_in "to", with: "2025-01-01"
     click_on "Filter anwenden"
@@ -23,7 +23,7 @@ class ExplorerFlowTest < ApplicationSystemTestCase
     assert_text "30"
     assert_text "Ausgewertete Tage"
     assert_text "1"
-    assert_no_text "2025-01-02 08:00"
+    assert_no_text "2. Januar 2025, 08:00"
 
     click_on "Zurücksetzen"
 

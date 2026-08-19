@@ -1,5 +1,12 @@
 class BikeCountsController < ApplicationController
   RESULTS_PER_PAGE = 100
+  CHART_COLORS = [
+    { border: "#005f73", background: "rgba(0, 95, 115, 0.16)" },
+    { border: "#0a9396", background: "rgba(10, 147, 150, 0.16)" },
+    { border: "#ee9b00", background: "rgba(238, 155, 0, 0.16)" },
+    { border: "#ca6702", background: "rgba(202, 103, 2, 0.16)" },
+    { border: "#9b2226", background: "rgba(155, 34, 38, 0.16)" }
+  ].freeze
 
   def index
     @stations = CountingStation.order(:external_id)
@@ -16,13 +23,15 @@ class BikeCountsController < ApplicationController
 
     @filter_errors = query_result.errors
     @field_errors = query_result.field_errors
-    @station_options = station_options(query_result.unknown_station_id)
+    @selected_station_ids = query_result.selected_station_ids.map(&:to_s)
+    @station_options = station_options(query_result.unknown_station_ids)
     @current_page = parsed_page
 
     filtered_scope = query_result.scope
     @statistics = BikeCounts::Statistics.new(scope: filtered_scope).call
     @chart_labels = @statistics.daily_series.map { |daily_total| daily_total[:date] }
-    @chart_values = @statistics.daily_series.map { |daily_total| daily_total[:count] }
+    @chart_datasets = build_chart_datasets(filtered_scope, query_result.selected_station_ids)
+    @comparison_mode = query_result.selected_station_ids.size > 1
 
     @total_matching = filtered_scope.except(:select).count
     @total_pages = [ (@total_matching.to_f / RESULTS_PER_PAGE).ceil, 1 ].max
@@ -38,7 +47,7 @@ class BikeCountsController < ApplicationController
 
   def filter_values
     {
-      station_id: params[:station_id].to_s,
+      station_ids: parsed_station_ids,
       from: params[:from].to_s,
       to: params[:to].to_s
     }
@@ -51,17 +60,82 @@ class BikeCountsController < ApplicationController
     1
   end
 
-  def station_options(unknown_station_id)
-    options = @stations.map { |station| [ "#{station.external_id} - #{station.name}", station.id ] }
-    return options unless unknown_station_id
+  def station_options(unknown_station_ids)
+    options = @stations.map { |station| [ station.name, station.id ] }
+    return options if unknown_station_ids.blank?
 
-    options << [ "Unknown station (ID #{@filter_values[:station_id]})", @filter_values[:station_id] ]
+    unknown_station_ids.each do |unknown_station_id|
+      options << [ "Unknown station (ID #{unknown_station_id})", unknown_station_id ]
+    end
+    options
   end
 
   def selected_station_label
-    selected_id = @filter_values[:station_id]
-    return "All stations" if selected_id.blank?
+    return "Alle Zählstellen" if @selected_station_ids.blank?
 
-    @station_options.find { |label, value| value.to_s == selected_id }&.first || "Unknown station"
+    labels = @selected_station_ids.filter_map do |station_id|
+      @station_options.find { |label, value| value.to_s == station_id }&.first
+    end
+
+    labels.presence&.join(", ") || "Unbekannte Zählstelle"
+  end
+
+  def parsed_station_ids
+    station_ids = Array(params[:station_ids]).map(&:to_s).reject(&:blank?)
+    if station_ids.empty? && params[:station_id].present?
+      station_ids = [ params[:station_id].to_s ]
+    end
+
+    station_ids.uniq
+  end
+
+  def build_chart_datasets(filtered_scope, selected_station_ids)
+    if selected_station_ids.size > 1
+      build_comparison_chart_datasets(filtered_scope, selected_station_ids)
+    else
+      [
+        chart_dataset(
+          label: "Gesamt (alle gewählten Zählstellen)",
+          values: @statistics.daily_series.map { |daily_total| daily_total[:count] },
+          color_index: 0,
+          fill: true
+        )
+      ]
+    end
+  end
+
+  def build_comparison_chart_datasets(filtered_scope, selected_station_ids)
+    grouped_counts = filtered_scope
+      .except(:includes, :preload, :eager_load, :order, :limit, :offset, :select)
+      .group(:counting_station_id, "DATE(bike_counts.counted_at)")
+      .sum(:count)
+
+    counts_by_station_and_day = Hash.new { |hash, key| hash[key] = {} }
+    grouped_counts.each do |(station_id, counted_on), count|
+      date = counted_on.is_a?(Date) ? counted_on.iso8601 : Date.iso8601(counted_on.to_s).iso8601
+      counts_by_station_and_day[station_id][date] = count.to_i
+    end
+
+    selected_station_ids.each_with_index.map do |station_id, index|
+      label = @station_options.find { |_label, value| value.to_s == station_id.to_s }&.first || "Station #{station_id}"
+      values = @chart_labels.map { |date| counts_by_station_and_day[station_id][date] }
+
+      chart_dataset(label: label, values: values, color_index: index, fill: false)
+    end
+  end
+
+  def chart_dataset(label:, values:, color_index:, fill:)
+    colors = CHART_COLORS[color_index % CHART_COLORS.size]
+    {
+      label: label,
+      data: values,
+      borderColor: colors[:border],
+      backgroundColor: colors[:background],
+      borderWidth: 2,
+      fill: fill,
+      tension: 0.2,
+      pointRadius: 2,
+      spanGaps: true
+    }
   end
 end

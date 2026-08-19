@@ -2,7 +2,16 @@
 
 module BikeCounts
   class FilterQuery
-    Result = Struct.new(:scope, :errors, :field_errors, :unknown_station_id, keyword_init: true)
+    MAX_COMPARISON_STATIONS = 5
+
+    Result = Struct.new(
+      :scope,
+      :errors,
+      :field_errors,
+      :unknown_station_ids,
+      :selected_station_ids,
+      keyword_init: true
+    )
 
     def initialize(scope:, params:)
       @scope = scope
@@ -13,13 +22,15 @@ module BikeCounts
       errors = []
       field_errors = {}
       filtered_scope = @scope
-      unknown_station_id = false
+      unknown_station_ids = []
+      selected_station_ids = []
 
-      station_filter = parse_station_id(@params[:station_id], errors, field_errors)
+      station_filter = parse_station_ids(@params[:station_ids], errors, field_errors)
       if station_filter[:status] == :ok
-        filtered_scope = filtered_scope.where(counting_station_id: station_filter[:id])
+        selected_station_ids = station_filter[:ids]
+        filtered_scope = filtered_scope.where(counting_station_id: selected_station_ids)
       elsif station_filter[:status] == :unknown
-        unknown_station_id = true
+        unknown_station_ids = station_filter[:ids]
         filtered_scope = filtered_scope.none
       elsif station_filter[:status] == :invalid
         filtered_scope = filtered_scope.none
@@ -45,28 +56,64 @@ module BikeCounts
         scope: filtered_scope,
         errors: errors,
         field_errors: field_errors,
-        unknown_station_id: unknown_station_id
+        unknown_station_ids: unknown_station_ids,
+        selected_station_ids: selected_station_ids
       )
     end
 
     private
 
-    def parse_station_id(raw_value, errors, field_errors)
-      return { status: :none } if raw_value.blank?
+    def parse_station_ids(raw_values, errors, field_errors)
+      station_ids = Array(raw_values).reject(&:blank?).map(&:to_s).uniq
+      return { status: :none } if station_ids.empty?
 
-      station_id = Integer(raw_value)
-      if station_id <= 0
-        add_error(errors, field_errors, :station_id, "Counting station ID must be a positive integer.")
+      if station_ids.size > MAX_COMPARISON_STATIONS
+        add_error(
+          errors,
+          field_errors,
+          :station_ids,
+          "Please select at most #{MAX_COMPARISON_STATIONS} counting stations for comparison."
+        )
         return { status: :invalid }
       end
 
-      return { status: :ok, id: station_id } if CountingStation.exists?(station_id)
+      parsed_ids = station_ids.map { |value| Integer(value) }
+      if parsed_ids.any? { |id| id <= 0 }
+        add_error_for_invalid_station_ids(errors, field_errors, station_ids)
+        return { status: :invalid }
+      end
 
-      add_error(errors, field_errors, :station_id, "Unknown counting station ID: #{station_id}.")
-      { status: :unknown, id: station_id }
+      known_ids = CountingStation.where(id: parsed_ids).pluck(:id)
+      unknown_ids = parsed_ids - known_ids
+      if unknown_ids.any?
+        add_error_for_unknown_station_ids(errors, field_errors, unknown_ids)
+        return { status: :unknown, ids: unknown_ids }
+      end
+
+      { status: :ok, ids: parsed_ids }
     rescue ArgumentError
-      add_error(errors, field_errors, :station_id, "Counting station ID must be a positive integer.")
+      add_error_for_invalid_station_ids(errors, field_errors, station_ids)
       { status: :invalid }
+    end
+
+    def add_error_for_invalid_station_ids(errors, field_errors, station_ids)
+      message = if station_ids.size == 1
+        "Counting station ID must be a positive integer."
+      else
+        "Counting station IDs must be positive integers."
+      end
+
+      add_error(errors, field_errors, :station_ids, message)
+    end
+
+    def add_error_for_unknown_station_ids(errors, field_errors, unknown_ids)
+      message = if unknown_ids.size == 1
+        "Unknown counting station ID: #{unknown_ids.first}."
+      else
+        "Unknown counting station IDs: #{unknown_ids.join(', ')}."
+      end
+
+      add_error(errors, field_errors, :station_ids, message)
     end
 
     def parse_date(raw_value, label, field, errors, field_errors)

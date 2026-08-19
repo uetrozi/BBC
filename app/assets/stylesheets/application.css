@@ -163,6 +163,12 @@ select:focus-visible {
   margin: 0.3rem 0 0;
 }
 
+.field-hint {
+  color: var(--muted);
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+}
+
 .table-wrap {
   overflow-x: auto;
 }

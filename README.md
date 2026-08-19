@@ -25,7 +25,7 @@ Die offiziellen Berliner Radzähldaten liegen als große Rohdateien vor. Das Pro
 
 - Import normalisierter CSV-Dateien in PostgreSQL
 - Duplikatsschutz und zeilenweise Fehlerbehandlung beim Import
-- Explorer mit URL-basierten Filtern (`station_id`, `from`, `to`, `page`)
+- Explorer mit URL-basierten Filtern (`station_ids[]`, `from`, `to`, `page`; `station_id` bleibt kompatibel)
 - Paginierte Ergebnistabelle
 - SQL-basierte Kennzahlen:
   - Gesamtzahl
@@ -243,7 +243,6 @@ Für ein kostenloses CV-Demo-Hosting ist **Render** vorbereitet:
 
 ## 19) Bekannte Einschränkungen
 
-- Keine Multi-Station-Vergleichsansicht.
 - Keine Mehrjahres-/Wochentagsanalyse.
 - Keine Kartenansicht.
 - Keine Upload-Oberfläche für Imports (nur Rake-Tasks).

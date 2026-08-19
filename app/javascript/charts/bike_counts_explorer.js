@@ -44,9 +44,9 @@ function renderBikeCountsChartWithRetry(attempt) {
   setChartLibraryError(false)
 
   const labels = parseJsonArray(canvas.dataset.chartLabels)
-  const values = parseJsonArray(canvas.dataset.chartValues)
+  const datasets = parseJsonArray(canvas.dataset.chartDatasets)
 
-  if (labels.length === 0 || values.length === 0 || labels.length !== values.length) {
+  if (labels.length === 0 || datasets.length === 0) {
     destroyBikeCountsChart()
     return
   }
@@ -57,18 +57,7 @@ function renderBikeCountsChartWithRetry(attempt) {
     type: "line",
     data: {
       labels,
-      datasets: [
-        {
-          label: "Bicycles counted per day",
-          data: values,
-          borderColor: "#005f73",
-          backgroundColor: "rgba(0, 95, 115, 0.12)",
-          borderWidth: 2,
-          fill: true,
-          tension: 0.2,
-          pointRadius: 2
-        }
-      ]
+      datasets
     },
     options: {
       responsive: true,

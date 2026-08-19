@@ -7,23 +7,27 @@
     (Datenlizenz Deutschland - Zero - Version 2.0).
   </p>
   <p>
-    Du kannst nach Zählstelle sowie Start- und Enddatum filtern.
+    Du kannst nach einer oder mehreren Zählstellen sowie Start- und Enddatum filtern.
+    Für den Vergleich mehrerer Zählstellen werden im Diagramm getrennte Linienfarben genutzt.
     Die Ergebnisse werden absteigend nach Messzeitpunkt sortiert (neueste zuerst).
   </p>
 
   <%= form_with url: explorer_path, method: :get, class: "filter-form" do |form| %>
     <div class="filter-grid">
       <div>
-        <%= form.label :station_id, "Zählstelle" %>
-        <%= form.select :station_id,
-                        options_for_select(@station_options, @filter_values[:station_id]),
-                        { include_blank: "Alle Zählstellen" },
+        <%= form.label :station_ids, "Zählstellen (Vergleich)" %>
+        <%= form.select :station_ids,
+                        options_for_select(@station_options, @selected_station_ids),
+                        {},
                         {
-                          "aria-invalid": @field_errors[:station_id].present?,
-                          "aria-describedby": (@field_errors[:station_id].present? ? "station-id-error" : nil)
+                          multiple: true,
+                          size: [ @station_options.size, BikeCounts::FilterQuery::MAX_COMPARISON_STATIONS + 1 ].min,
+                          "aria-invalid": @field_errors[:station_ids].present?,
+                          "aria-describedby": (@field_errors[:station_ids].present? ? "station-ids-error station-ids-hint" : "station-ids-hint")
                         } %>
-        <% if @field_errors[:station_id].present? %>
-          <p id="station-id-error" class="field-error"><%= @field_errors[:station_id].first %></p>
+        <p id="station-ids-hint" class="field-hint">Mehrfachauswahl mit Cmd (Mac) / Ctrl (Windows/Linux), maximal <%= BikeCounts::FilterQuery::MAX_COMPARISON_STATIONS %> Zählstellen.</p>
+        <% if @field_errors[:station_ids].present? %>
+          <p id="station-ids-error" class="field-error"><%= @field_errors[:station_ids].first %></p>
         <% end %>
       </div>
 
@@ -76,15 +80,15 @@
     bis
     <strong><%= format_optional_filter_date(@filter_values[:to]) || "alle verfügbaren Daten (bis)" %></strong>
     |
-    Ausgewertete Zählstelle: <strong><%= @selected_station_label %></strong>
+    Ausgewertete Zählstellen: <strong><%= @selected_station_label %></strong>
   </p>
 
   <% if @has_filters %>
     <section class="active-filters" aria-label="Aktive Filter">
       <h2>Aktive Filter</h2>
       <ul>
-        <% if @filter_values[:station_id].present? %>
-          <li>Zählstelle: <%= @selected_station_label %></li>
+        <% if @selected_station_ids.present? %>
+          <li>Zählstellen: <%= @selected_station_label %></li>
         <% end %>
         <% if @filter_values[:from].present? %>
           <li>Startdatum: <%= format_optional_filter_date(@filter_values[:from]) %></li>
@@ -137,7 +141,11 @@
   <section class="chart-panel" aria-labelledby="bike-count-chart-title">
     <h2 id="bike-count-chart-title">Gezählte Fahrräder im Zeitverlauf</h2>
     <p>
-      Das Diagramm zeigt die aufsummierten Tageswerte der aktuell gefilterten Daten.
+      <% if @comparison_mode %>
+        Das Diagramm zeigt Tageswerte je ausgewählter Zählstelle im direkten Vergleich.
+      <% else %>
+        Das Diagramm zeigt die aufsummierten Tageswerte der aktuell gefilterten Daten.
+      <% end %>
       Die zentrale Auswertung bleibt auch ohne Diagramm über Kennzahlen und Tabelle nachvollziehbar.
     </p>
     <% if @chart_labels.any? %>
@@ -145,7 +153,7 @@
         <canvas
           data-bike-count-chart="true"
           data-chart-labels="<%= @chart_labels.to_json %>"
-          data-chart-values="<%= @chart_values.to_json %>"
+          data-chart-datasets="<%= @chart_datasets.to_json %>"
           aria-label="Linienchart mit gezählten Fahrrädern pro Tag im gewählten Zeitraum"
         ></canvas>
       </div>
@@ -178,7 +186,6 @@
           <tr>
             <th scope="col">Messzeitpunkt</th>
             <th scope="col">Zählstelle</th>
-            <th scope="col">Name</th>
             <th scope="col">Fahrräder</th>
           </tr>
         </thead>
@@ -186,8 +193,7 @@
           <% @bike_counts.each do |bike_count| %>
             <tr data-external-id="<%= bike_count.counting_station.external_id %>" data-counted-at="<%= bike_count.counted_at.iso8601 %>">
               <td data-label="Messzeitpunkt"><%= format_counted_at(bike_count.counted_at) %></td>
-              <td data-label="Zählstelle"><%= bike_count.counting_station.external_id %></td>
-              <td data-label="Name"><%= bike_count.counting_station.name %></td>
+              <td data-label="Zählstelle"><%= bike_count.counting_station.name %></td>
               <td data-label="Fahrräder"><%= format_integer(bike_count.count) %></td>
             </tr>
           <% end %>

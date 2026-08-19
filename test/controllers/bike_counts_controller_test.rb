@@ -29,6 +29,17 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "data-external-id=\"#{@station_two.external_id}\""
   end
 
+  test "filters by multiple counting stations" do
+    get explorer_url, params: { station_ids: [ @station_one.id, @station_two.id ] }
+
+    assert_response :success
+    assert_includes response.body, "data-external-id=\"#{@station_one.external_id}\""
+    assert_includes response.body, "data-external-id=\"#{@station_two.external_id}\""
+    assert_includes response.body, "data-chart-datasets="
+    assert_includes response.body, @station_one.external_id
+    assert_includes response.body, @station_two.external_id
+  end
+
   test "filters by start date" do
     BikeCount.create!(counting_station: @station_one, counted_at: Time.zone.parse("2025-01-02 00:00:00"), count: 99)
 
@@ -54,7 +65,7 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     BikeCount.create!(counting_station: @station_two, counted_at: Time.zone.parse("2025-01-03 00:00:00"), count: 102)
 
     get explorer_url, params: {
-      station_id: @station_one.id,
+      station_ids: [ @station_one.id ],
       from: "2025-01-03",
       to: "2025-01-03"
     }
@@ -114,6 +125,14 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
   end
 
+  test "limits station comparison selection size" do
+    get explorer_url, params: { station_ids: [ 1, 2, 3, 4, 5, 6 ] }
+
+    assert_response :success
+    assert_includes response.body, "Please select at most 5 counting stations for comparison."
+    assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
+  end
+
   test "handles empty database without server error" do
     BikeCount.delete_all
     CountingStation.delete_all
@@ -135,16 +154,16 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
       )
     end
 
-    get explorer_url, params: { station_id: @station_one.id, from: "2025-01-01", to: "2025-01-31" }
+    get explorer_url, params: { station_ids: [ @station_one.id ], from: "2025-01-01", to: "2025-01-31" }
 
     assert_response :success
     assert_includes response.body, "Seite 1 von 2"
-    assert_includes response.body, "station_id=#{@station_one.id}"
+    assert_includes response.body, "station_ids%5B%5D=#{@station_one.id}"
     assert_includes response.body, "from=2025-01-01"
     assert_includes response.body, "to=2025-01-31"
     assert_includes response.body, "page=2"
 
-    get explorer_url, params: { station_id: @station_one.id, from: "2025-01-01", to: "2025-01-31", page: 2 }
+    get explorer_url, params: { station_ids: [ @station_one.id ], from: "2025-01-01", to: "2025-01-31", page: 2 }
 
     assert_response :success
     assert_includes response.body, "Seite 2 von 2"
