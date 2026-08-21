@@ -24,8 +24,20 @@ class BikeCounts::StatisticsTest < ActiveSupport::TestCase
     statistics = BikeCounts::Statistics.new(scope: BikeCount.all).call
 
     assert_equal [
-      { date: "2025-01-01", count: 16 },
-      { date: "2025-01-02", count: 5 }
+      {
+        date: "2025-01-01",
+        count: 16,
+        bvg_strike: false,
+        bvg_strike_label: nil,
+        bvg_strike_note: nil
+      },
+      {
+        date: "2025-01-02",
+        count: 5,
+        bvg_strike: false,
+        bvg_strike_label: nil,
+        bvg_strike_note: nil
+      }
     ], statistics.daily_series
   end
 
@@ -77,7 +89,15 @@ class BikeCounts::StatisticsTest < ActiveSupport::TestCase
     ).call
 
     assert_equal 20, statistics.total_bikes
-    assert_equal [ { date: "2025-01-03", count: 20 } ], statistics.daily_series
+    assert_equal [
+      {
+        date: "2025-01-03",
+        count: 20,
+        bvg_strike: false,
+        bvg_strike_label: nil,
+        bvg_strike_note: nil
+      }
+    ], statistics.daily_series
   end
 
   test "returns daily series in chronological order" do
@@ -88,6 +108,20 @@ class BikeCounts::StatisticsTest < ActiveSupport::TestCase
     statistics = BikeCounts::Statistics.new(scope: BikeCount.all).call
 
     assert_equal [ "2025-01-01", "2025-01-02", "2025-01-03" ], statistics.daily_series.map { |day| day[:date] }
+  end
+
+  test "marks bvg strike days in daily series" do
+    create_count(@station_one, "2025-01-27 08:00:00", 80)
+    create_count(@station_one, "2025-01-28 08:00:00", 40)
+
+    statistics = BikeCounts::Statistics.new(scope: BikeCount.all).call
+
+    strike_day = statistics.daily_series.find { |day| day[:date] == "2025-01-27" }
+    regular_day = statistics.daily_series.find { |day| day[:date] == "2025-01-28" }
+
+    assert_equal true, strike_day[:bvg_strike]
+    assert_equal "BVG-Warnstreik", strike_day[:bvg_strike_label]
+    assert_equal false, regular_day[:bvg_strike]
   end
 
   test "returns empty and non misleading values for empty scope" do

@@ -1,6 +1,6 @@
 # BerlinBikeCountExplorer
 
-BerlinBikeCountExplorer ist eine Ruby-on-Rails-Anwendung zur Auswertung offizieller Berliner Radzähldaten: CSV-Import, serverseitige Filterung, tabellarische Anzeige, Kennzahlen und Zeitreihen-Diagramm.
+BerlinBikeCountExplorer ist eine Ruby-on-Rails-Anwendung zur Auswertung offizieller Berliner Radzähldaten und historischer Wetterdaten (DWD): CSV-/Text-Import, serverseitige Filterung, tabellarische Anzeige, Kennzahlen und Zeitreihen-Diagramm.
 
 ## 1) Screenshot
 
@@ -34,6 +34,12 @@ Die offiziellen Berliner Radzähldaten liegen als große Rohdateien vor. Das Pro
   - Anzahl ausgewerteter Tage
 - Chart.js-Liniendiagramm auf Tagesaggregation
 - Importhistorie über `ImportBatch`
+- DWD-Wetterimport (Tagesmitteltemperatur `TMK`, Niederschlag `RSK`)
+- Kombinierte Tagesdaten (Rad + Wetter) über Kalenderdatum
+- Wetteranalyse im Explorer:
+  - Scatterplot Temperatur ↔ Radverkehr
+  - Scatterplot Niederschlag ↔ Radverkehr
+  - Pearson-Korrelation je Beziehung (bei unzureichenden Daten als „Nicht ausreichend Daten“)
 
 ## 5) Verwendete Technologien
 
@@ -53,14 +59,29 @@ Die offiziellen Berliner Radzähldaten liegen als große Rohdateien vor. Das Pro
 - Lizenz: **Datenlizenz Deutschland - Zero - Version 2.0 (dl-de-zero-2.0)**
 - Detailanalyse der realen Quellstruktur: `docs/data_source_analysis.md`
 
+### Zweite Datenquelle: Wetter (DWD)
+
+- Quelle: Deutscher Wetterdienst (DWD), Climate Data Center (CDC)
+- Produkt: tägliche Klimabeobachtungen (`daily/kl`)
+- Verwendete Wetterstation für Berlin: `00433` – **Berlin-Tempelhof**
+- Station laut DWD-Stationstabelle verfügbar von `19480101` bis aktuell laufend, für BBC-X genutzt im Rad-Daten-Zeitraum
+- Konkrete Datei (historisch): `tageswerte_KL_00433_19480101_20251231_hist.zip`
+- Relevante Felder:
+  - `MESS_DATUM` (Datum, Format `YYYYMMDD`)
+  - `TMK` (Tagesmitteltemperatur in °C)
+  - `RSK` (Tagesniederschlag in mm)
+- Fehlwerte: DWD kennzeichnet fehlende Werte mit `-999` (werden als `nil` gespeichert, nicht als `0`)
+- Lizenz: DWD Open Data (CDC), frei zugängliche amtliche Wetterdaten
+
 ## 7) Architekturübersicht
 
 ```text
 Offizielle XLSX/CSV-Quelle
   -> Normalisierung (XlsxNormalizer, optional)
   -> CsvImporter / ImportRunner
-  -> PostgreSQL (counting_stations, bike_counts, import_batches)
-  -> Active Record Query Objects (FilterQuery, Statistics)
+  -> DWD-Datei (ZIP/TXT) -> Weather::DwdImporter
+  -> PostgreSQL (counting_stations, bike_counts, weather_stations, weather_observations, import_batches)
+  -> Active Record Query Objects (FilterQuery, Statistics, WeatherAnalysis)
   -> Rails Controller + Views
   -> HTML-Tabelle + Kennzahlen + Chart.js
 ```
@@ -93,6 +114,19 @@ Offizielle XLSX/CSV-Quelle
 - `invalid_rows`
 - `status` (`running`, `completed`, `completed_with_errors`, `failed`)
 
+### weather_stations
+
+- `external_id` (DWD Stations-ID, unique)
+- `name`
+
+### weather_observations
+
+- `weather_station_id` (FK)
+- `observed_on` (Datum)
+- `mean_temperature` (°C, nullable bei DWD-Fehlwert)
+- `precipitation` (mm, nullable bei DWD-Fehlwert)
+- Unique-Index auf `(weather_station_id, observed_on)`
+
 ## 9) CSV-Importprozess
 
 1. Datei- und Header-Validierung
@@ -103,6 +137,15 @@ Offizielle XLSX/CSV-Quelle
 6. Importzusammenfassung + Fehlerliste erzeugen
 7. Importlauf in `import_batches` protokollieren
 
+## 9b) DWD-Importprozess (Wetter)
+
+1. DWD Produktdatei lokal bereitstellen (ZIP oder TXT)
+2. `Weather::DwdImporter` liest `MESS_DATUM`, `TMK`, `RSK`
+3. Fehlwerte (`-999`) werden zu `nil` (nicht zu `0`)
+4. Pro Datum wird maximal eine Beobachtung je Wetterstation gespeichert
+5. Duplikate werden per Unique-Index erkannt und übersprungen
+6. Strukturierte Importzusammenfassung wird ausgegeben
+
 ## 10) Filter- und Analysefunktionen
 
 - Filterung erfolgt serverseitig in SQL, nicht in Ruby-Arrays.
@@ -112,6 +155,38 @@ Offizielle XLSX/CSV-Quelle
   - Kennzahlen
   - Chartdaten
 - Tagesaggregation: erst Summe pro Kalendertag, dann Kennzahlen.
+- Wetterzuordnung erfolgt ohne FK zwischen BikeCount und Wetter:
+  - `DATE(bike_counts.counted_at)` wird mit `weather_observations.observed_on` verbunden.
+
+## 10b) Weather analysis
+
+- Datenbasis: tägliche Rad-Summen + DWD-Tageswerte (`TMK`, `RSK`) auf demselben Kalenderdatum.
+- Visualisierung: zwei Scatterplots im Explorer, je Punkt genau ein Kalendertag.
+- Temperatur-Plot verwendet `TMK` auf der X-Achse, Niederschlags-Plot `RSK`.
+- Tage ohne BikeCount werden nicht dargestellt.
+- Tage ohne Temperatur erscheinen nur nicht im Temperatur-Plot; Tage ohne Niederschlag nur nicht im Niederschlags-Plot.
+- Ein Messwert von `0` (z. B. `0 °C` oder `0 mm`) bleibt gültig und wird angezeigt.
+- Korrelation: Pearson-Koeffizient wird serverseitig berechnet und neben jedem Plot ausgewiesen.
+- Fachhinweis: Korrelation beschreibt einen Zusammenhang in Beobachtungsdaten und beweist keine Kausalität.
+
+## 10c) External events
+
+- In allen drei Visualisierungen werden BVG-Warnstreiktage 2025 mit einem Dreiecksmarker (`△`) markiert.
+- Betroffen waren an diesen Tagen U-Bahn, Straßenbahn und die meisten Buslinien; S-Bahn und Regionalverkehr waren nicht Teil dieser BVG-Streiks.
+- Die Markierung dient als Kontext für mögliche externe Einflussfaktoren und entfernt keine Datenpunkte aus der Analyse.
+- Korrelationen bleiben unverändert und enthalten weiterhin alle gültigen Beobachtungstage.
+- Die Markierung zeigt keinen kausalen Nachweis, sondern einen zeitlichen Kontext.
+- Verwendete Kalendertage:
+  - `2025-01-27`
+  - `2025-02-10`
+  - `2025-02-20`
+  - `2025-02-21`
+  - `2025-03-19`
+  - `2025-03-20`
+  - `2025-03-26`
+  - `2025-03-27`
+- Konfiguration zentral in `config/bvg_strike_days.yml`.
+- Quelle: offizielle BVG-Dokumentation zur Tarifrunde 2025.
 
 ## 11) Lokale Einrichtung
 
@@ -195,6 +270,12 @@ Reproduzierbare Demodaten:
 
 ```bash
 bin/rails bbcx:seed_demo
+```
+
+DWD-Wetterimport:
+
+```bash
+bin/rails "weather:import[data/raw/tageswerte_KL_00433_19480101_20251231_hist.zip]"
 ```
 
 ## 15) Testbefehle

@@ -21,6 +21,65 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "data-external-id=\"#{@station_two.external_id}\""
   end
 
+  test "restricts calendar selection to year 2025 in date fields" do
+    get explorer_url
+
+    assert_response :success
+    assert_includes response.body, "name=\"from\""
+    assert_includes response.body, "min=\"2025-01-01\""
+    assert_includes response.body, "max=\"2025-12-31\""
+    assert_includes response.body, "name=\"to\""
+  end
+
+  test "renders weather analysis section with both scatterplots" do
+    get explorer_url
+
+    assert_response :success
+    assert_includes response.body, "Wetter &amp; Radverkehr"
+    assert_includes response.body, "Temperatur und Radverkehr"
+    assert_includes response.body, "Niederschlag und Radverkehr"
+    assert_includes response.body, "data-weather-scatter-kind=\"temperature\""
+    assert_includes response.body, "data-weather-scatter-kind=\"precipitation\""
+    assert_includes response.body, "data-chart-points="
+    assert_includes response.body, "△ BVG-Warnstreik"
+    assert_includes response.body, "Ausgewertete Tage: <strong>1</strong>"
+    assert_includes response.body, "Korrelation: <strong>Nicht ausreichend Daten</strong>"
+  end
+
+  test "includes strike markers in chart payloads only for included dates" do
+    BikeCount.create!(counting_station: @station_one, counted_at: Time.zone.parse("2025-02-20 08:00:00"), count: 88)
+    WeatherStation.find_or_create_by!(external_id: "00433") { |station| station.name = "Berlin-Tempelhof" }
+    weather_station = WeatherStation.find_by!(external_id: "00433")
+    WeatherObservation.create!(
+      weather_station: weather_station,
+      observed_on: Date.iso8601("2025-02-20"),
+      mean_temperature: 7.0,
+      precipitation: 0.0
+    )
+
+    get explorer_url, params: { from: "2025-02-20", to: "2025-02-20", station_ids: [ @station_one.id ] }
+
+    assert_response :success
+    assert_includes response.body, "bvg_strike&quot;:true"
+    assert_includes response.body, "BVG-Warnstreik"
+
+    get explorer_url, params: { from: "2025-02-22", to: "2025-02-22", station_ids: [ @station_one.id ] }
+
+    assert_response :success
+    assert_not_includes response.body, "bvg_strike&quot;:true"
+  end
+
+  test "shows clear weather empty state when no observations are available" do
+    WeatherObservation.delete_all
+
+    get explorer_url
+
+    assert_response :success
+    assert_includes response.body, "Für den aktuellen Filter sind keine Temperaturwerte verfügbar."
+    assert_includes response.body, "Für den aktuellen Filter sind keine Niederschlagswerte verfügbar."
+    assert_includes response.body, "Korrelation: <strong>Nicht ausreichend Daten</strong>"
+  end
+
   test "does not show stations without bike count data in station filter" do
     empty_station = CountingStation.create!(
       external_id: "DEMO-EMPTY-01",
@@ -32,6 +91,23 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_not_includes response.body, "value=\"#{empty_station.id}\""
     assert_not_includes response.body, empty_station.name
+  end
+
+  test "does not show demo stations in station filter even when they contain data" do
+    demo_station = CountingStation.create!(
+      external_id: "DEMO-01-JAN-N",
+      name: "Jannowitzbrücke Nord (Demo)"
+    )
+    BikeCount.create!(
+      counting_station: demo_station,
+      counted_at: Time.zone.parse("2025-05-01 08:00:00"),
+      count: 42
+    )
+
+    get explorer_url
+
+    assert_response :success
+    assert_not_includes response.body, "<option value=\"#{demo_station.id}\">"
   end
 
   test "filters by counting station" do
@@ -111,6 +187,22 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
 
     assert_response :success
     assert_includes response.body, "End date must be on or after start date."
+    assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
+  end
+
+  test "rejects start date before allowed range" do
+    get explorer_url, params: { from: "2024-12-31", to: "2025-01-02" }
+
+    assert_response :success
+    assert_includes response.body, "Start date must be between 2025-01-01 and 2025-12-31."
+    assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
+  end
+
+  test "rejects end date after allowed range" do
+    get explorer_url, params: { from: "2025-12-30", to: "2026-01-01" }
+
+    assert_response :success
+    assert_includes response.body, "End date must be between 2025-01-01 and 2025-12-31."
     assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
   end
 

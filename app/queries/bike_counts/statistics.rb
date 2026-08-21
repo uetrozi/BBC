@@ -61,9 +61,14 @@ module BikeCounts
       daily_totals
         .sort_by { |date, _count| parse_date(date) }
         .map do |date, count|
+        parsed_date = parse_date(date)
+        strike_event = ExternalEvents::BvgStrikeDays.event_for(parsed_date)
         {
-          date: parse_date(date).iso8601,
-          count: count.to_i
+          date: parsed_date.iso8601,
+          count: count.to_i,
+          bvg_strike: strike_event.present?,
+          bvg_strike_label: strike_event&.dig(:label),
+          bvg_strike_note: strike_event&.dig(:note)
         }
         end
     end
