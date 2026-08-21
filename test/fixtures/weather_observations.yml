@@ -1,0 +1,11 @@
+tempelhof_day_one:
+  weather_station: berlin_tempelhof
+  observed_on: 2025-01-01
+  mean_temperature: 2.5
+  precipitation: 0.0
+
+tempelhof_day_two:
+  weather_station: berlin_tempelhof
+  observed_on: 2025-01-02
+  mean_temperature: 3.2
+  precipitation: 1.4

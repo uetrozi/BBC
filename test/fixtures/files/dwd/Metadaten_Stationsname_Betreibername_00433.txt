@@ -1,0 +1,5 @@
+Stations_ID;Stationsname;Von_Datum;Bis_Datum
+433;Berlin-Tempelhof;19180401;
+
+Stations_ID;Betreibername;Von_Datum;Bis_Datum
+433;DWD;19180401;

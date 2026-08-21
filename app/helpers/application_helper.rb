@@ -46,4 +46,11 @@ module ApplicationHelper
   def format_decimal(value, precision: 2)
     number_with_precision(value, precision: precision, delimiter: ".", separator: ",")
   end
+
+  def format_correlation(value)
+    return "Nicht ausreichend Daten" if value.nil?
+
+    formatted = format_decimal(value, precision: 2)
+    value.positive? ? "+#{formatted}" : formatted
+  end
 end

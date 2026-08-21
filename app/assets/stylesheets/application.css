@@ -241,6 +241,32 @@ select:focus-visible {
   margin-top: 0.6rem;
 }
 
+.weather-analysis-panel {
+  margin-top: 1.8rem;
+}
+
+.chart-disclaimer,
+.weather-station-context {
+  color: var(--muted);
+}
+
+.weather-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.weather-chart-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem;
+  background: #fff;
+}
+
+.weather-chart-card h3 {
+  margin-top: 0;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -317,5 +343,9 @@ td {
   td::before {
     content: attr(data-label) ": ";
     font-weight: 700;
+  }
+
+  .weather-charts-grid {
+    grid-template-columns: 1fr;
   }
 }

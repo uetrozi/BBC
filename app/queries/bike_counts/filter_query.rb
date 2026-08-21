@@ -3,6 +3,8 @@
 module BikeCounts
   class FilterQuery
     MAX_COMPARISON_STATIONS = 5
+    ALLOWED_FROM_DATE = Date.iso8601("2025-01-01")
+    ALLOWED_TO_DATE = Date.iso8601("2025-12-31")
 
     Result = Struct.new(
       :scope,
@@ -39,7 +41,9 @@ module BikeCounts
       start_date = parse_date(@params[:from], "Start date", :from, errors, field_errors)
       end_date = parse_date(@params[:to], "End date", :to, errors, field_errors)
 
-      if start_date.present? && end_date.present? && end_date < start_date
+      if field_errors[:from].present? || field_errors[:to].present?
+        filtered_scope = filtered_scope.none
+      elsif start_date.present? && end_date.present? && end_date < start_date
         add_error(
           errors,
           field_errors,
@@ -119,7 +123,18 @@ module BikeCounts
     def parse_date(raw_value, label, field, errors, field_errors)
       return nil if raw_value.blank?
 
-      Date.iso8601(raw_value)
+      parsed_date = Date.iso8601(raw_value)
+      if parsed_date < ALLOWED_FROM_DATE || parsed_date > ALLOWED_TO_DATE
+        add_error(
+          errors,
+          field_errors,
+          field,
+          "#{label} must be between #{ALLOWED_FROM_DATE.iso8601} and #{ALLOWED_TO_DATE.iso8601}."
+        )
+        return nil
+      end
+
+      parsed_date
     rescue ArgumentError
       add_error(errors, field_errors, field, "#{label} is invalid: #{raw_value}.")
       nil
