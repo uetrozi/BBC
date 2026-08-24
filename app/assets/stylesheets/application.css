@@ -101,24 +101,57 @@ body {
   margin-top: 0.5rem;
   text-decoration: none;
   font-weight: 600;
+  border-radius: 6px;
+  padding: 0.45rem 0.7rem;
 }
 
 .primary-link {
-  color: var(--accent);
+  color: #fff;
+  background: var(--accent);
+  border: 1px solid var(--accent);
 }
 
 .secondary-link {
   color: var(--muted);
-  margin-left: 0.8rem;
+  margin-left: 0;
+  background: #fff;
+  border: 1px solid var(--border);
 }
 
 .bike-counts-page {
   max-width: 980px;
 }
 
+.section-panel {
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.section-panel > h2 {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
 .filter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: minmax(260px, 1fr) minmax(420px, 2fr);
+  gap: 1rem;
+  align-items: start;
+  margin-top: 0.8rem;
+}
+
+.date-filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.date-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -139,6 +172,23 @@ body {
 
 .filter-actions {
   margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.filter-actions input[type="submit"],
+.filter-actions .secondary-link,
+.filter-actions .primary-link {
+  margin-top: 0;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  padding: 0.5rem 0.9rem;
+  min-height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .filter-actions input[type="submit"] {
@@ -146,8 +196,43 @@ body {
   color: #fff;
   border: none;
   border-radius: 6px;
-  padding: 0.5rem 0.9rem;
   cursor: pointer;
+}
+
+.month-quick-select {
+  margin-top: 0;
+}
+
+.month-quick-select .field-hint {
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+
+.month-quick-select-actions {
+  margin-top: 0.35rem;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.month-button {
+  width: 100%;
+  min-height: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0;
+  font-size: 0.82rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  padding: 0.33rem 0.4rem;
+}
+
+.month-button-active {
+  color: #fff;
+  background: #0a7f96;
+  border-color: #0a7f96;
 }
 
 a:focus-visible,
@@ -173,33 +258,11 @@ select:focus-visible {
   overflow-x: auto;
 }
 
-.filter-context {
-  color: var(--muted);
-}
-
-.active-filters {
-  margin-top: 0.8rem;
-  padding: 0.7rem;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #f4f7fb;
-}
-
-.active-filters h2 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.active-filters ul {
-  margin: 0.4rem 0 0;
-  padding-left: 1.2rem;
-}
-
 .statistics-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.8rem;
-  margin: 1rem 0 1.2rem;
+  margin: 0.8rem 0 1.2rem;
 }
 
 .stat-card {
@@ -220,7 +283,7 @@ select:focus-visible {
 }
 
 .chart-panel {
-  margin-top: 1.2rem;
+  margin-top: 1rem;
 }
 
 .chart-canvas-wrap {
@@ -242,7 +305,7 @@ select:focus-visible {
 }
 
 .weather-analysis-panel {
-  margin-top: 1.8rem;
+  margin-top: 1.2rem;
 }
 
 .chart-disclaimer,
@@ -265,6 +328,24 @@ select:focus-visible {
 
 .weather-chart-card h3 {
   margin-top: 0;
+}
+
+.records-panel {
+  margin-top: 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.75rem;
+}
+
+.records-panel > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.records-panel[open] > summary {
+  margin-bottom: 0.7rem;
 }
 
 table {
@@ -310,6 +391,15 @@ td {
 }
 
 @media (max-width: 760px) {
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .date-filter-grid {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+
   .hero {
     margin: 1rem;
     padding: 1rem;

@@ -1,4 +1,5 @@
 require "test_helper"
+require "nokogiri"
 
 class BikeCountsControllerTest < ActionDispatch::IntegrationTest
   setup do
@@ -149,6 +150,48 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, "data-counted-at=\"2025-01-02T00:00:00Z\""
   end
 
+  test "month quick select expands to contiguous month range" do
+    get explorer_url, params: { station_ids: [ @station_one.id ], from: "2025-01-01", to: "2025-01-31" }
+
+    assert_response :success
+
+    document = Nokogiri::HTML(response.body)
+    march_link = document.css("a.secondary-link").find { |link| link.text.strip == "Mär 2025" }
+
+    assert march_link.present?
+    assert_includes march_link["href"], "from=2025-01-01"
+    assert_includes march_link["href"], "to=2025-03-31"
+    assert_includes march_link["href"], "station_ids%5B%5D=#{@station_one.id}"
+  end
+
+  test "month quick select deselects a single selected month" do
+    get explorer_url, params: { station_ids: [ @station_one.id ], from: "2025-03-01", to: "2025-03-31" }
+
+    assert_response :success
+
+    document = Nokogiri::HTML(response.body)
+    march_link = document.css("a.secondary-link").find { |link| link.text.strip == "Mär 2025" }
+
+    assert march_link.present?
+    assert_not_includes march_link["href"], "from="
+    assert_not_includes march_link["href"], "to="
+    assert_includes march_link["href"], "station_ids%5B%5D=#{@station_one.id}"
+  end
+
+  test "month quick select shrinks range when clicking selected edge month" do
+    get explorer_url, params: { station_ids: [ @station_one.id ], from: "2025-01-01", to: "2025-03-31" }
+
+    assert_response :success
+
+    document = Nokogiri::HTML(response.body)
+    march_link = document.css("a.secondary-link").find { |link| link.text.strip == "Mär 2025" }
+
+    assert march_link.present?
+    assert_includes march_link["href"], "from=2025-01-01"
+    assert_includes march_link["href"], "to=2025-02-28"
+    assert_includes march_link["href"], "station_ids%5B%5D=#{@station_one.id}"
+  end
+
   test "applies combined filters and keeps selected values visible" do
     BikeCount.create!(counting_station: @station_one, counted_at: Time.zone.parse("2025-01-03 00:00:00"), count: 101)
     BikeCount.create!(counting_station: @station_two, counted_at: Time.zone.parse("2025-01-03 00:00:00"), count: 102)
@@ -245,7 +288,7 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     get explorer_url
 
     assert_response :success
-    assert_includes response.body, "Gefundene Messwerte:"
+    assert_includes response.body, "Explorer"
     assert_includes response.body, "Keine Messwerte für die gewählten Filter gefunden."
   end
 

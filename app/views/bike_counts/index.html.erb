@@ -1,68 +1,125 @@
 <main class="hero bike-counts-page">
-  <h1>Explorer</h1>
-  <p class="short-name">Importierte Berliner Radzähl-Messwerte</p>
+  <h1>BerlinBikeCountExplorer</h1>
   <p>
-    Diese Übersicht zeigt einzelne Messwerte offizieller Berliner Dauerzählstellen.
-    Datenquelle: Senatsverwaltung für Mobilität, Verkehr, Klimaschutz und Umwelt
-    (Datenlizenz Deutschland - Zero - Version 2.0).
-  </p>
-  <p>
-    Du kannst nach einer oder mehreren Zählstellen sowie Start- und Enddatum filtern.
-    Für den Vergleich mehrerer Zählstellen werden im Diagramm getrennte Linienfarben genutzt.
-    Die Ergebnisse werden absteigend nach Messzeitpunkt sortiert (neueste zuerst).
+    Diese App bündelt offizielle Berliner Radzähl- und Wetterdaten, damit du Radverkehr nach Zeitraum und Zählstellen filtern, als Kennzahlen und Diagramme auswerten und Trends schneller verstehen kannst.
   </p>
 
-  <%= form_with url: explorer_path, method: :get, class: "filter-form" do |form| %>
-    <div class="filter-grid">
-      <div>
-        <%= form.label :station_ids, "Zählstellen (Vergleich)" %>
-        <%= form.select :station_ids,
-                        options_for_select(@station_options, @selected_station_ids),
-                        {},
-                        {
-                          multiple: true,
-                          size: [ @station_options.size, BikeCounts::FilterQuery::MAX_COMPARISON_STATIONS + 1 ].min,
-                          "aria-invalid": @field_errors[:station_ids].present?,
-                          "aria-describedby": (@field_errors[:station_ids].present? ? "station-ids-error station-ids-hint" : "station-ids-hint")
-                        } %>
-        <p id="station-ids-hint" class="field-hint">Mehrfachauswahl mit Cmd (Mac) / Ctrl (Windows/Linux), maximal <%= BikeCounts::FilterQuery::MAX_COMPARISON_STATIONS %> Zählstellen.</p>
-        <% if @field_errors[:station_ids].present? %>
-          <p id="station-ids-error" class="field-error"><%= @field_errors[:station_ids].first %></p>
-        <% end %>
+  <section class="section-panel" aria-labelledby="filter-form-title">
+    <%= form_with url: explorer_path, method: :get, class: "filter-form" do |form| %>
+      <div class="filter-grid">
+        <div>
+          <%= form.label :station_ids, "Zählstellen (Vergleich)" %>
+          <%= form.select :station_ids,
+                          options_for_select(@station_options, @selected_station_ids),
+                          {},
+                          {
+                            multiple: true,
+                            size: [ @station_options.size, BikeCounts::FilterQuery::MAX_COMPARISON_STATIONS + 1 ].min,
+                            "aria-invalid": @field_errors[:station_ids].present?,
+                            "aria-describedby": (@field_errors[:station_ids].present? ? "station-ids-error station-ids-hint" : "station-ids-hint")
+                          } %>
+          <% if @field_errors[:station_ids].present? %>
+            <p id="station-ids-error" class="field-error"><%= @field_errors[:station_ids].first %></p>
+          <% end %>
+        </div>
+
+        <div class="date-filter-panel">
+          <div class="date-filter-grid">
+            <div>
+              <%= form.label :from, "Startdatum" %>
+              <%= form.date_field :from,
+                                  value: @filter_values[:from],
+                                  min: BikeCounts::FilterQuery::ALLOWED_FROM_DATE.iso8601,
+                                  max: BikeCounts::FilterQuery::ALLOWED_TO_DATE.iso8601,
+                                  "aria-invalid": @field_errors[:from].present?,
+                                  "aria-describedby": (@field_errors[:from].present? ? "from-error" : nil) %>
+              <% if @field_errors[:from].present? %>
+                <p id="from-error" class="field-error"><%= @field_errors[:from].first %></p>
+              <% end %>
+            </div>
+
+            <div>
+              <%= form.label :to, "Enddatum" %>
+              <%= form.date_field :to,
+                                  value: @filter_values[:to],
+                                  min: BikeCounts::FilterQuery::ALLOWED_FROM_DATE.iso8601,
+                                  max: BikeCounts::FilterQuery::ALLOWED_TO_DATE.iso8601,
+                                  "aria-invalid": @field_errors[:to].present?,
+                                  "aria-describedby": (@field_errors[:to].present? ? "to-error" : nil) %>
+              <% if @field_errors[:to].present? %>
+                <p id="to-error" class="field-error"><%= @field_errors[:to].first %></p>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="month-quick-select" aria-label="Schnellauswahl ganzer Monate">
+          <p class="field-hint">Mehrfachauswahl ist nur zusammenhängend möglich.</p>
+          <% selected_month_start = nil %>
+          <% selected_month_end = nil %>
+          <% begin %>
+            <% if @filter_values[:from].present? && @filter_values[:to].present? %>
+              <% parsed_from = Date.iso8601(@filter_values[:from]).beginning_of_month %>
+              <% parsed_to = Date.iso8601(@filter_values[:to]).beginning_of_month %>
+              <% if parsed_to >= parsed_from %>
+                <% selected_month_start = parsed_from %>
+                <% selected_month_end = parsed_to %>
+              <% end %>
+            <% end %>
+          <% rescue ArgumentError %>
+            <% selected_month_start = nil %>
+            <% selected_month_end = nil %>
+          <% end %>
+          <div class="month-quick-select-actions">
+            <% month_cursor = BikeCounts::FilterQuery::ALLOWED_FROM_DATE.beginning_of_month %>
+            <% while month_cursor <= BikeCounts::FilterQuery::ALLOWED_TO_DATE %>
+              <% month_name = ApplicationHelper::GERMAN_MONTH_NAMES[month_cursor.month].to_s %>
+              <% month_label = "#{month_name[0, 3]} #{month_cursor.year}" %>
+              <% month_is_selected = selected_month_start.present? && selected_month_end.present? && month_cursor >= selected_month_start && month_cursor <= selected_month_end %>
+              <% month_is_single_selected = month_is_selected && selected_month_start == selected_month_end %>
+              <% month_is_start_edge = month_is_selected && month_cursor == selected_month_start %>
+              <% month_is_end_edge = month_is_selected && month_cursor == selected_month_end %>
+              <% month_is_inner_selected = month_is_selected && !month_is_start_edge && !month_is_end_edge %>
+              <% if month_is_single_selected %>
+                <% month_start = nil %>
+                <% month_end = nil %>
+              <% elsif month_is_start_edge %>
+                <% next_start_month = selected_month_start.next_month %>
+                <% month_start = [next_start_month, BikeCounts::FilterQuery::ALLOWED_FROM_DATE].max.iso8601 %>
+                <% month_end = [selected_month_end.end_of_month, BikeCounts::FilterQuery::ALLOWED_TO_DATE].min.iso8601 %>
+              <% elsif month_is_end_edge %>
+                <% previous_end_month = selected_month_end.prev_month %>
+                <% month_start = [selected_month_start, BikeCounts::FilterQuery::ALLOWED_FROM_DATE].max.iso8601 %>
+                <% month_end = [previous_end_month.end_of_month, BikeCounts::FilterQuery::ALLOWED_TO_DATE].min.iso8601 %>
+              <% elsif month_is_inner_selected %>
+                <% month_start = [selected_month_start, BikeCounts::FilterQuery::ALLOWED_FROM_DATE].max.iso8601 %>
+                <% month_end = [selected_month_end.end_of_month, BikeCounts::FilterQuery::ALLOWED_TO_DATE].min.iso8601 %>
+              <% else %>
+                <% range_start_month = selected_month_start.present? ? [selected_month_start, month_cursor].min : month_cursor %>
+                <% range_end_month = selected_month_end.present? ? [selected_month_end, month_cursor].max : month_cursor %>
+                <% month_start = [range_start_month, BikeCounts::FilterQuery::ALLOWED_FROM_DATE].max.iso8601 %>
+                <% month_end = [range_end_month.end_of_month, BikeCounts::FilterQuery::ALLOWED_TO_DATE].min.iso8601 %>
+              <% end %>
+              <% month_params = {
+                station_ids: @selected_station_ids.presence,
+                from: month_start,
+                to: month_end
+              }.compact %>
+              <%= link_to month_label,
+                          explorer_path(month_params),
+                          class: ["secondary-link", "month-button", (month_is_selected ? "month-button-active" : nil)].compact.join(" ") %>
+              <% month_cursor = month_cursor.next_month.beginning_of_month %>
+            <% end %>
+          </div>
+          </div>
+        </div>
       </div>
 
-      <div>
-        <%= form.label :from, "Startdatum" %>
-        <%= form.date_field :from,
-                            value: @filter_values[:from],
-                            min: BikeCounts::FilterQuery::ALLOWED_FROM_DATE.iso8601,
-                            max: BikeCounts::FilterQuery::ALLOWED_TO_DATE.iso8601,
-                            "aria-invalid": @field_errors[:from].present?,
-                            "aria-describedby": (@field_errors[:from].present? ? "from-error" : nil) %>
-        <% if @field_errors[:from].present? %>
-          <p id="from-error" class="field-error"><%= @field_errors[:from].first %></p>
-        <% end %>
+      <div class="filter-actions">
+        <%= form.submit "Filter anwenden" %>
+        <%= link_to "Zurücksetzen", explorer_path, class: "secondary-link" %>
       </div>
-
-      <div>
-        <%= form.label :to, "Enddatum" %>
-        <%= form.date_field :to,
-                            value: @filter_values[:to],
-                            min: BikeCounts::FilterQuery::ALLOWED_FROM_DATE.iso8601,
-                            max: BikeCounts::FilterQuery::ALLOWED_TO_DATE.iso8601,
-                            "aria-invalid": @field_errors[:to].present?,
-                            "aria-describedby": (@field_errors[:to].present? ? "to-error" : nil) %>
-        <% if @field_errors[:to].present? %>
-          <p id="to-error" class="field-error"><%= @field_errors[:to].first %></p>
-        <% end %>
-      </div>
-    </div>
-
-    <div class="filter-actions">
-      <%= form.submit "Filter anwenden" %>
-      <%= link_to "Zurücksetzen", explorer_path, class: "secondary-link" %>
-    </div>
-  <% end %>
+    <% end %>
+  </section>
 
   <% if @filter_errors.any? %>
     <section class="warning-box" aria-live="polite">
@@ -75,133 +132,81 @@
     </section>
   <% end %>
 
-  <p>
-    Gefundene Messwerte: <strong><%= @total_matching %></strong>
-  </p>
+  <section class="section-panel" aria-labelledby="bike-overview-title">
+    <h2 id="bike-overview-title">Gezählte Fahrräder</h2>
+    <section class="statistics-grid" aria-label="Kennzahlen">
+      <article class="stat-card">
+        <h2>Gezählte Fahrräder gesamt</h2>
+        <p><strong><%= format_integer(@statistics.total_bikes) %></strong></p>
+      </article>
 
-  <p class="filter-context">
-    Zeitraum: <strong><%= format_optional_filter_date(@filter_values[:from]) || "alle verfügbaren Daten (von)" %></strong>
-    bis
-    <strong><%= format_optional_filter_date(@filter_values[:to]) || "alle verfügbaren Daten (bis)" %></strong>
-    |
-    Ausgewertete Zählstellen: <strong><%= @selected_station_label %></strong>
-  </p>
+      <article class="stat-card">
+        <h2>Ausgewertete Tage</h2>
+        <p><strong><%= format_integer(@statistics.evaluated_days) %></strong></p>
+      </article>
 
-  <% if @has_filters %>
-    <section class="active-filters" aria-label="Aktive Filter">
-      <h2>Aktive Filter</h2>
-      <ul>
-        <% if @selected_station_ids.present? %>
-          <li>Zählstellen: <%= @selected_station_label %></li>
-        <% end %>
-        <% if @filter_values[:from].present? %>
-          <li>Startdatum: <%= format_optional_filter_date(@filter_values[:from]) %></li>
-        <% end %>
-        <% if @filter_values[:to].present? %>
-          <li>Enddatum: <%= format_optional_filter_date(@filter_values[:to]) %></li>
-        <% end %>
-      </ul>
+      <article class="stat-card">
+        <h2>Durchschnitt pro ausgewertetem Tag</h2>
+        <p>
+          <strong>
+            <% if @statistics.average_per_day.present? %>
+              <%= format_decimal(@statistics.average_per_day) %>
+            <% else %>
+              nicht verfügbar
+            <% end %>
+          </strong>
+        </p>
+      </article>
+
+      <article class="stat-card">
+        <h2>Stärkster Tag</h2>
+        <p>
+          <strong>
+            <% if @statistics.strongest_day.present? %>
+              <%= format_date(@statistics.strongest_day[:date]) %> (<%= format_integer(@statistics.strongest_day[:count]) %>)
+            <% else %>
+              nicht verfügbar
+            <% end %>
+          </strong>
+        </p>
+      </article>
     </section>
-  <% end %>
 
-  <section class="statistics-grid" aria-label="Kennzahlen">
-    <article class="stat-card">
-      <h2>Gezählte Fahrräder gesamt</h2>
-      <p><strong><%= format_integer(@statistics.total_bikes) %></strong></p>
-    </article>
-
-    <article class="stat-card">
-      <h2>Ausgewertete Tage</h2>
-      <p><strong><%= format_integer(@statistics.evaluated_days) %></strong></p>
-    </article>
-
-    <article class="stat-card">
-      <h2>Durchschnitt pro ausgewertetem Tag</h2>
-      <p>
-        <strong>
-          <% if @statistics.average_per_day.present? %>
-            <%= format_decimal(@statistics.average_per_day) %>
-          <% else %>
-            nicht verfügbar
-          <% end %>
-        </strong>
-      </p>
-    </article>
-
-    <article class="stat-card">
-      <h2>Stärkster Tag</h2>
-      <p>
-        <strong>
-          <% if @statistics.strongest_day.present? %>
-            <%= format_date(@statistics.strongest_day[:date]) %> (<%= format_integer(@statistics.strongest_day[:count]) %>)
-          <% else %>
-            nicht verfügbar
-          <% end %>
-        </strong>
-      </p>
-    </article>
-  </section>
-
-  <section class="chart-panel" aria-labelledby="bike-count-chart-title">
-    <h2 id="bike-count-chart-title">Gezählte Fahrräder im Zeitverlauf</h2>
-    <p>
-      <% if @comparison_mode %>
-        Das Diagramm zeigt Tageswerte je ausgewählter Zählstelle im direkten Vergleich.
+    <section class="chart-panel" aria-labelledby="bike-count-chart-title">
+      <h2 id="bike-count-chart-title">Gezählte Fahrräder im Zeitverlauf</h2>
+      <p class="field-hint">△ BVG-Warnstreik</p>
+      <% if @chart_labels.any? %>
+        <div class="chart-canvas-wrap">
+          <canvas
+            data-bike-count-chart="true"
+            data-chart-labels="<%= @chart_labels.to_json %>"
+            data-chart-datasets="<%= @chart_datasets.to_json %>"
+            aria-label="Linienchart mit gezählten Fahrrädern pro Tag im gewählten Zeitraum"
+          ></canvas>
+        </div>
+        <p class="warning-box" data-chart-library-error="true" hidden>
+          Das Diagramm konnte nicht geladen werden. Die Kennzahlen und die Tabelle sind weiterhin vollständig nutzbar.
+        </p>
+        <details class="chart-fallback">
+          <summary>Tageswerte als Textliste anzeigen</summary>
+          <ul>
+            <% @statistics.daily_series.each do |point| %>
+              <li><%= format_optional_filter_date_with_weekday(point[:date]) %>: <%= format_integer(point[:count]) %></li>
+            <% end %>
+          </ul>
+        </details>
       <% else %>
-        Das Diagramm zeigt die aufsummierten Tageswerte der aktuell gefilterten Daten.
+        <p class="empty-state">Für den aktuellen Filter sind keine Tageswerte für das Diagramm verfügbar.</p>
       <% end %>
-      Die zentrale Auswertung bleibt auch ohne Diagramm über Kennzahlen und Tabelle nachvollziehbar.
-    </p>
-    <p class="field-hint">△ BVG-Warnstreik</p>
-    <% if @chart_labels.any? %>
-      <div class="chart-canvas-wrap">
-        <canvas
-          data-bike-count-chart="true"
-          data-chart-labels="<%= @chart_labels.to_json %>"
-          data-chart-datasets="<%= @chart_datasets.to_json %>"
-          aria-label="Linienchart mit gezählten Fahrrädern pro Tag im gewählten Zeitraum"
-        ></canvas>
-      </div>
-      <p class="chart-text-summary">
-        Erster ausgewerteter Tag: <strong><%= format_optional_filter_date_with_weekday(@chart_labels.first) %></strong>,
-        letzter ausgewerteter Tag: <strong><%= format_optional_filter_date_with_weekday(@chart_labels.last) %></strong>,
-        Anzahl dargestellter Tage: <strong><%= @chart_labels.size %></strong>.
-      </p>
-      <p class="warning-box" data-chart-library-error="true" hidden>
-        Das Diagramm konnte nicht geladen werden. Die Kennzahlen und die Tabelle sind weiterhin vollständig nutzbar.
-      </p>
-      <details class="chart-fallback">
-        <summary>Tageswerte als Textliste anzeigen</summary>
-        <ul>
-          <% @statistics.daily_series.each do |point| %>
-            <li><%= format_optional_filter_date_with_weekday(point[:date]) %>: <%= format_integer(point[:count]) %></li>
-          <% end %>
-        </ul>
-      </details>
-    <% else %>
-      <p class="empty-state">Für den aktuellen Filter sind keine Tageswerte für das Diagramm verfügbar.</p>
-    <% end %>
+    </section>
   </section>
 
-  <section class="chart-panel weather-analysis-panel" aria-labelledby="weather-analysis-title">
+  <section class="section-panel weather-analysis-panel" aria-labelledby="weather-analysis-title">
     <h2 id="weather-analysis-title">Wetter &amp; Radverkehr</h2>
-    <p>
-      Die Darstellung vergleicht die täglichen Radzählwerte mit den Wetterbedingungen desselben Tages.
-      Jeder Punkt entspricht einem Kalendertag.
-    </p>
-    <p class="chart-disclaimer">
-      Hinweis: Sichtbare Zusammenhänge zeigen Korrelationen in Beobachtungsdaten und beweisen keine Kausalität.
-    </p>
-    <p class="chart-disclaimer">
-      Neben dem Wetter können weitere Faktoren das Radverkehrsaufkommen beeinflussen. Markierte Tage kennzeichnen
-      BVG-Warnstreiks, an denen U-Bahn, Straßenbahn und die meisten Busse weitgehend ausfielen.
-    </p>
-    <p class="field-hint">△ BVG-Warnstreik</p>
+  
+    
 
-    <% if @weather_station.present? %>
-      <p class="weather-station-context">
-        Verwendete Wetterstation: <strong><%= @weather_station.name %> (ID <%= @weather_station.external_id %>)</strong>
-      </p>
+    
 
       <div class="weather-charts-grid">
         <article class="weather-chart-card" aria-labelledby="weather-temperature-title">
@@ -246,53 +251,68 @@
           <% end %>
         </article>
       </div>
+      <p class="field-hint">△ BVG-Warnstreik</p>
+      <% if @weather_station.present? %>
+      <p class="weather-station-context">
+        Verwendete Wetterstation: <strong><%= @weather_station.name %> (ID <%= @weather_station.external_id %>)</strong>
+      </p>
+        <p class="field-hint">
+      Die Darstellung vergleicht die täglichen Radzählwerte mit den Wetterbedingungen desselben Tages.
+      Jeder Punkt entspricht einem Kalendertag.
+      Hinweis: Sichtbare Zusammenhänge zeigen Korrelationen in Beobachtungsdaten und beweisen keine Kausalität.
+      Neben dem Wetter können weitere Faktoren das Radverkehrsaufkommen beeinflussen. Markierte Tage kennzeichnen
+      BVG-Warnstreiks, an denen U-Bahn, Straßenbahn und die meisten Busse weitgehend ausfielen.
+    </p>
     <% else %>
       <p class="empty-state">Es ist keine Wetterstation mit Beobachtungsdaten vorhanden.</p>
     <% end %>
   </section>
 
   <% if @bike_counts.any? %>
-    <div class="table-wrap">
-      <table>
-        <caption>Gefilterte Einzelmesswerte (maximal <%= BikeCountsController::RESULTS_PER_PAGE %> pro Seite)</caption>
-        <thead>
-          <tr>
-            <th scope="col">Messzeitpunkt</th>
-            <th scope="col">Zählstelle</th>
-            <th scope="col">Fahrräder</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @bike_counts.each do |bike_count| %>
-            <tr data-external-id="<%= bike_count.counting_station.external_id %>" data-counted-at="<%= bike_count.counted_at.iso8601 %>">
-              <td data-label="Messzeitpunkt"><%= format_counted_at(bike_count.counted_at) %></td>
-              <td data-label="Zählstelle"><%= bike_count.counting_station.name %></td>
-              <td data-label="Fahrräder"><%= format_integer(bike_count.count) %></td>
+    <details class="records-panel">
+      <summary>Gefilterte Einzelmesswerte anzeigen</summary>
+      <div class="table-wrap">
+        <table>
+          <caption>Gefilterte Einzelmesswerte (maximal <%= BikeCountsController::RESULTS_PER_PAGE %> pro Seite)</caption>
+          <thead>
+            <tr>
+              <th scope="col">Messzeitpunkt</th>
+              <th scope="col">Zählstelle</th>
+              <th scope="col">Fahrräder</th>
             </tr>
+          </thead>
+          <tbody>
+            <% @bike_counts.each do |bike_count| %>
+              <tr data-external-id="<%= bike_count.counting_station.external_id %>" data-counted-at="<%= bike_count.counted_at.iso8601 %>">
+                <td data-label="Messzeitpunkt"><%= format_counted_at(bike_count.counted_at) %></td>
+                <td data-label="Zählstelle"><%= bike_count.counting_station.name %></td>
+                <td data-label="Fahrräder"><%= format_integer(bike_count.count) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+      <% if @total_pages > 1 %>
+        <nav class="pagination" aria-label="Seitennavigation">
+          <% if @current_page > 1 %>
+            <%= link_to "Zurück", explorer_path(@pagination_params.merge(page: @current_page - 1)), class: "secondary-link" %>
           <% end %>
-        </tbody>
-      </table>
-    </div>
+          <span>Seite <%= @current_page %> von <%= @total_pages %></span>
+          <% if @current_page < @total_pages %>
+            <%= link_to "Weiter", explorer_path(@pagination_params.merge(page: @current_page + 1)), class: "secondary-link" %>
+          <% end %>
+        </nav>
+      <% end %>
+    </details>
   <% else %>
     <section class="empty-state">
       <p>
         Keine Messwerte für die gewählten Filter gefunden.
-        <% unless @has_filters %>
+        <% unless @filter_values.values.any?(&:present?) %>
           Importiere zuerst Daten, um Einträge zu sehen.
         <% end %>
       </p>
     </section>
   <% end %>
 
-  <% if @total_pages > 1 %>
-    <nav class="pagination" aria-label="Seitennavigation">
-      <% if @current_page > 1 %>
-        <%= link_to "Zurück", explorer_path(@pagination_params.merge(page: @current_page - 1)), class: "secondary-link" %>
-      <% end %>
-      <span>Seite <%= @current_page %> von <%= @total_pages %></span>
-      <% if @current_page < @total_pages %>
-        <%= link_to "Weiter", explorer_path(@pagination_params.merge(page: @current_page + 1)), class: "secondary-link" %>
-      <% end %>
-    </nav>
-  <% end %>
 </main>

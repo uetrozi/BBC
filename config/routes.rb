@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  root "home#index"
+  root "bike_counts#index"
   get "explorer", to: "bike_counts#index", as: :explorer
   resources :bike_counts, only: [ :index ]
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

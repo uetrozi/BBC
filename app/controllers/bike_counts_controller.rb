@@ -53,8 +53,6 @@ class BikeCountsController < ApplicationController
 
     @bike_counts = filtered_scope.limit(RESULTS_PER_PAGE).offset((@current_page - 1) * RESULTS_PER_PAGE)
     @pagination_params = @filter_values.compact_blank
-    @has_filters = @filter_values.values.any?(&:present?)
-    @selected_station_label = selected_station_label
   end
 
   private
@@ -82,16 +80,6 @@ class BikeCountsController < ApplicationController
       options << [ "Unknown station (ID #{unknown_station_id})", unknown_station_id ]
     end
     options
-  end
-
-  def selected_station_label
-    return "Alle Zählstellen" if @selected_station_ids.blank?
-
-    labels = @selected_station_ids.filter_map do |station_id|
-      @station_options.find { |label, value| value.to_s == station_id }&.first
-    end
-
-    labels.presence&.join(", ") || "Unbekannte Zählstelle"
   end
 
   def parsed_station_ids
