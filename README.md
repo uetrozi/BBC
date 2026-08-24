@@ -6,11 +6,11 @@ BerlinBikeCountExplorer ist eine Ruby-on-Rails-Anwendung zur Auswertung offiziel
 
 Explorer (lokale Demoansicht):
 
-![Explorer Live Full](docs/screenshots/explorer-live-date-Filter.jpg.png)
+![Explorer](docs/screenshots/explorer-live-date-Filter.jpg)
 
 Explorer - Wetter-Korrelation
 
-![Explorer Live Filtered](docs/screenshots/explorer-weather-correlation.png)
+![Explorer Weather Correlation](docs/screenshots/explorer-weather-correlation.jpg)
 
 ## 2) Live-Demo
 
