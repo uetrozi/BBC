@@ -4,13 +4,13 @@ BerlinBikeCountExplorer ist eine Ruby-on-Rails-Anwendung zur Auswertung offiziel
 
 ## 1) Screenshot
 
-Explorer (lokale Demoansicht, ungefiltert):
+Explorer (lokale Demoansicht):
 
-![Explorer Live Full](docs/screenshots/explorer-live-full.png)
+![Explorer Live Full](docs/screenshots/explorer-live-date-Filter.jpg.png)
 
-Explorer (lokale Demoansicht, Zeitraum-Filter, Tabelle exemplarisch mit wenigen Treffern):
+Explorer - Wetter-Korrelation
 
-![Explorer Live Filtered](docs/screenshots/explorer-live-filtered.png)
+![Explorer Live Filtered](docs/screenshots/explorer-weather-correlation.png)
 
 ## 2) Live-Demo
 
@@ -26,13 +26,16 @@ Die offiziellen Berliner Radzähldaten liegen als große Rohdateien vor. Das Pro
 - Import normalisierter CSV-Dateien in PostgreSQL
 - Duplikatsschutz und zeilenweise Fehlerbehandlung beim Import
 - Explorer mit URL-basierten Filtern (`station_ids[]`, `from`, `to`, `page`; `station_id` bleibt kompatibel)
+- Mehrfachauswahl von Monaten per Schnellauswahl (zusammenhängende Monate, 2x6 Monatsbuttons)
 - Paginierte Ergebnistabelle
+- Tabelle der Einzelmesswerte standardmäßig eingeklappt und bei Bedarf aufklappbar
 - SQL-basierte Kennzahlen:
   - Gesamtzahl
   - Durchschnitt pro ausgewertetem Tag
   - Stärkster Tag
   - Anzahl ausgewerteter Tage
 - Chart.js-Liniendiagramm auf Tagesaggregation
+- Explorer-Layout mit klar getrennten Bereichen (Filter, Kennzahlen/Verlauf, Wetteranalyse)
 - Importhistorie über `ImportBatch`
 - DWD-Wetterimport (Tagesmitteltemperatur `TMK`, Niederschlag `RSK`)
 - Kombinierte Tagesdaten (Rad + Wetter) über Kalenderdatum
@@ -209,7 +212,6 @@ bin/rails db:prepare
 Dann:
 
 - Startseite: `http://localhost:3000`
-- Explorer: `http://localhost:3000/explorer`
 
 ## 12) Erforderliche Umgebungsvariablen
 
@@ -331,7 +333,6 @@ Für ein kostenloses CV-Demo-Hosting ist **Render** vorbereitet:
 
 ## 20) Mögliche Erweiterungen
 
-- Vergleich mehrerer Zählstellen
 - weitere Zeitfilter (z. B. Wochentage)
 - erweiterte Importhistorie als Admin-Ansicht
 - weitere Diagrammtypen
