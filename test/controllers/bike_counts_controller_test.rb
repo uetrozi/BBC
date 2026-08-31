@@ -76,6 +76,7 @@ class BikeCountsControllerTest < ActionDispatch::IntegrationTest
     get explorer_url
 
     assert_response :success
+    assert_includes response.body, "Es ist keine Wetterstation mit Beobachtungsdaten vorhanden."
     assert_includes response.body, "Für den aktuellen Filter sind keine Temperaturwerte verfügbar."
     assert_includes response.body, "Für den aktuellen Filter sind keine Niederschlagswerte verfügbar."
     assert_includes response.body, "Korrelation: <strong>Nicht ausreichend Daten</strong>"

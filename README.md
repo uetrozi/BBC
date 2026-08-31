@@ -262,6 +262,12 @@ Produktions-Import über Supabase/Render-Zugangsdaten aus 1Password:
 bin/import_production_csv data/raw/bbcx_normalized_2025.csv
 ```
 
+Produktions-Wetterimport über dieselben Render-Zugangsdaten:
+
+```bash
+bin/import_production_weather data/raw/tageswerte_KL_00433_19480101_20251231_hist.zip
+```
+
 Normalisieren + Import in einem Schritt:
 
 ```bash

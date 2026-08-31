@@ -176,7 +176,10 @@ class BikeCountsController < ApplicationController
   end
 
   def selected_weather_station
-    WeatherStation.find_by(external_id: PRIMARY_WEATHER_STATION_EXTERNAL_ID) || WeatherStation.order(:external_id).first
+    stations_with_observations = WeatherStation.joins(:weather_observations).distinct
+
+    stations_with_observations.find_by(external_id: PRIMARY_WEATHER_STATION_EXTERNAL_ID) ||
+      stations_with_observations.order(:external_id).first
   end
 
   def build_weather_correlation(filtered_scope)

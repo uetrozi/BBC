@@ -47,6 +47,24 @@ class Weather::DwdImporterTest < ActiveSupport::TestCase
     assert_equal 2, result.invalid_rows
   end
 
+  test "imports DWD product from zip archive" do
+    zip_file = Tempfile.new([ "dwd-weather", ".zip" ])
+    zip_file.close
+
+    Zip::File.open(zip_file.path, create: true) do |archive|
+      archive.add("produkt_klima_tag_20250101_20250105_00433.txt", fixture_path("produkt_klima_tag_20250101_20250105_00433.txt"))
+      archive.add("Metadaten_Stationsname_Betreibername_00433.txt", fixture_path("Metadaten_Stationsname_Betreibername_00433.txt"))
+    end
+
+    result = Weather::DwdImporter.call(zip_file.path)
+
+    assert_equal 6, result.rows_read
+    assert_equal 3, result.imported_rows
+    assert_equal "Berlin-Tempelhof", WeatherStation.find_by!(external_id: "00433").name
+  ensure
+    zip_file&.unlink
+  end
+
   test "raises helpful error when file does not exist" do
     error = assert_raises(ArgumentError) { Weather::DwdImporter.call("missing-dwd-file.txt") }
 

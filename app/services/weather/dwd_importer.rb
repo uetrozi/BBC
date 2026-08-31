@@ -74,12 +74,12 @@ module Weather
       station_name = nil
 
       Zip::File.open(@file_path) do |archive|
-        product_entry = archive.glob(PRODUCT_FILE_PATTERN).first
+        product_entry = find_zip_entry(archive, PRODUCT_FILE_PATTERN)
         raise ArgumentError, "No DWD product file found in ZIP archive." if product_entry.nil?
 
         product_content = force_utf8(product_entry.get_input_stream.read)
 
-        station_metadata_entry = archive.glob(STATION_METADATA_PATTERN).first
+        station_metadata_entry = find_zip_entry(archive, STATION_METADATA_PATTERN)
         station_name = parse_station_name(station_metadata_entry.get_input_stream.read) if station_metadata_entry
       end
 
@@ -87,6 +87,10 @@ module Weather
         product_content: product_content,
         station_name: station_name
       }
+    end
+
+    def find_zip_entry(archive, pattern)
+      archive.entries.find { |entry| File.basename(entry.name).match?(pattern) }
     end
 
     def read_from_plain_text

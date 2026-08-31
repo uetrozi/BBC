@@ -22,8 +22,9 @@ Für die CV-Demo ist **Render** als Hosting-Ziel vorbereitet (`render.yaml` + Do
 4. Deploy starten
 5. Nach erstem Deploy optional einmalig Seeds ausführen:
    - `bin/rails bbcx:seed_demo`
-6. Ohne Render-Shell echte CSV-Daten importieren:
+6. Ohne Render-Shell echte CSV- und Wetterdaten importieren:
    - `bin/import_production_csv data/raw/bbcx_normalized_2025.csv`
+   - `bin/import_production_weather data/raw/tageswerte_KL_00433_19480101_20251231_hist.zip`
 
 ## Relevante Umgebungsvariablen in Produktion
 
@@ -65,7 +66,7 @@ Render-Deployment ist per Blueprint vorbereitet; produktive Veröffentlichung h�
 
 ## Import ohne Render-Shell (1Password CLI)
 
-Das Script `bin/import_production_csv` liest folgende 1Password-Items aus:
+Die Scripts `bin/import_production_csv` und `bin/import_production_weather` lesen folgende 1Password-Items aus:
 
 - `op://Private/BBCX/render.com/database_url`
 - `op://Private/BBCX/render.com/master_key`
