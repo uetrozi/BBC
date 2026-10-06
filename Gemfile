@@ -5,7 +5,7 @@ gem "rails", "~> 8.1.3", ">= 8.1.3.1"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
 # Use postgresql as the database for Active Record
-gem "pg", "~> 1.1"
+gem "pg", "~> 1.7"
 # CSV became a bundled gem and is no longer always loaded by default in Ruby 3.4+
 gem "csv"
 # Read official Berlin XLSX source files before CSV normalization
